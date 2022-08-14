@@ -61,10 +61,14 @@ public:
 	// Runs the algorithm until the problem is solved or time is exhausted 
 	bool solve(double time_limit, int cost_lowerbound = 0, int cost_upperbound = MAX_COST);
 
-	CBS(const Instance& instance, bool sipp, int screen);
+	CBS(Instance& instance, bool sipp, int screen);
 	CBS(vector<SingleAgentSolver*>& search_engines,
 		const vector<ConstraintTable>& constraints,
 		vector<Path>& paths_found_initially, int screen);
+
+    CBS(Instance& instance, int screen);
+
+
 	void clearSearchEngines();
 	~CBS();
 
@@ -76,6 +80,23 @@ public:
 
 	void clear(); // used for rapid random  restart
 
+    // For dynamic map
+    void dijkstra();
+    void initSolveParams(double time_limit, int cost_lowerbound = 0, int cost_upperbound = MAX_COST);
+    bool generateRoot();
+
+    void set_min_f_val(double value) { min_f_val = value;}
+
+    bool solve(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v, vector<DynamicObstacle>& obstacle_add_v);
+
+    bool checkViolateObstacle(CBSNode& curr, vector<DynamicObstacle>& obstacle_add_v);
+
+    bool solveObstacleDeleted(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v);
+
+
+    bool recomputePathCost(const vector<int>& costs_new);
+
+    void printTestInfos();
 private:
 	bool target_reasoning; // using target reasoning
 	bool disjoint_splitting; // disjoint splitting
@@ -120,7 +141,7 @@ private:
 	// high level search
 	bool findPathForSingleAgent(CBSNode*  node, int ag, int lower_bound = 0);
 	bool generateChild(CBSNode* child, CBSNode* curr);
-	bool generateRoot();
+//	bool generateRoot();
 
 	//conflicts
 	void findConflicts(CBSNode& curr);

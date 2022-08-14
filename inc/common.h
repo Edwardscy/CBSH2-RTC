@@ -8,6 +8,7 @@
 #include <fstream>
 #include <iostream>     // std::cout, std::fixed
 #include <iomanip>      // std::setprecision
+#include <numeric>
 #include <boost/heap/pairing_heap.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/unordered_map.hpp>
@@ -53,6 +54,18 @@ struct PathEntry
 	}
 	PathEntry(int loc = -1) { location = loc;}
 };
+
+struct DynamicObstacle
+{
+    int x = -1;
+    int y = -1;
+
+    DynamicObstacle(int x_, int y_){
+        this->x = x_;
+        this->y = y_;
+    }
+};
+
 
 typedef vector<PathEntry> Path;
 std::ostream& operator<<(std::ostream& os, const Path& path);

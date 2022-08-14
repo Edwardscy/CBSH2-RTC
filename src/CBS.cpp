@@ -413,6 +413,7 @@ bool CBS::generateChild(CBSNode* node, CBSNode* parent)
 	assert(node->constraints.size() > 0);
 	tie(agent, x, y, t, type) = node->constraints.front();
 
+    cout << "generateChild type: " << type << endl;
 	if (type == constraint_type::LEQLENGTH)
 	{
 		assert(node->constraints.size() <= 2);
@@ -541,7 +542,12 @@ void CBS::printPaths() const
 void CBS::updateFocalList()
 {
 	CBSNode* open_head = open_list.top();
-	if (open_head->g_val + open_head->h_val > min_f_val)
+    cout << "v: " << open_head->g_val + open_head->h_val << ", " << min_f_val << endl;
+    cout << "open_list.size(): " << open_list.size() << endl;
+    cout << "focal_list.size(): " << focal_list.size() << endl;
+
+
+    if (open_head->g_val + open_head->h_val > min_f_val)
 	{
 		if (screen == 3)
 		{
@@ -551,9 +557,21 @@ void CBS::updateFocalList()
 		double new_focal_list_threshold = min_f_val * focal_w;
 		for (CBSNode* n : open_list)
 		{
+            cout << endl;
+            cout << "n->g_val + n->h_val: " << n->g_val + n->h_val << endl;
+            cout << "focal_list_threshold: " << focal_list_threshold << endl;
+            cout << "new_focal_list_threshold: " << new_focal_list_threshold << endl;
+            cout << "min_f_val: " << min_f_val << endl;
+            cout << "focal_w: " << focal_w << endl;
+
 			if (n->g_val + n->h_val > focal_list_threshold &&
 				n->g_val + n->h_val <= new_focal_list_threshold)
-				n->focal_handle = focal_list.push(n);
+            {
+                n->focal_handle = focal_list.push(n);
+            }
+            else if(focal_list.size() == 0) {
+                n->focal_handle = focal_list.push(n);
+            }
 		}
 		focal_list_threshold = new_focal_list_threshold;
 		if (screen == 3)
@@ -561,6 +579,29 @@ void CBS::updateFocalList()
 			cout << focal_list.size() << endl;
 		}
 	}
+
+//    if(focal_list.size() == 0) {
+//        for (CBSNode* n : open_list)
+//        {
+////            n->focal_handle = focal_list.push(n);
+//            cout << "n->depth: " << n->depth << endl;
+//            if(n->depth == 1) {
+//                n->focal_handle = focal_list.push(n);
+//                break;
+//            }
+//        }
+//
+//        cout << "focal_list.size(): " << focal_list.size() << endl;
+//
+//        CBSNode* test_node = focal_list.top();
+//        cout << "test_node->conflicts.size(): " << test_node->conflicts.size() << endl;
+//        cout << "test_node->unknownConf.size(): " << test_node->unknownConf.size() << endl;
+////        focal_list.push(open_list.top());
+//        findConflicts(*test_node);
+//        cout << "test_node->conflicts.size(): " << test_node->conflicts.size() << endl;
+//        cout << "test_node->unknownConf.size(): " << test_node->unknownConf.size() << endl;
+//
+//    }
 }
 
 
@@ -741,6 +782,16 @@ string CBS::getSolverName() const
 	name += " with " + search_engines[0]->getName();
 	return name;
 }
+
+
+
+void CBS::initSolveParams(double _time_limit, int _cost_lowerbound, int _cost_upperbound)
+{
+    this->min_f_val = _cost_lowerbound;
+    this->cost_upperbound = _cost_upperbound;
+    this->time_limit = _time_limit;
+}
+
 
 bool CBS::solve(double _time_limit, int _cost_lowerbound, int _cost_upperbound)
 {
@@ -926,7 +977,7 @@ bool CBS::solve(double _time_limit, int _cost_lowerbound, int _cost_upperbound)
 					int i = (bool)(rand() % 2);
 					for (const auto constraint : child[1 - i]->constraints)
 					{
-						child[i]->constraints.emplace_back(get<0>(constraint), get<1>(constraint), get<2>(constraint), get<3>(constraint), 
+						child[i]->constraints.emplace_back(get<0>(constraint), get<1>(constraint), get<2>(constraint), get<3>(constraint),
 																							constraint_type::POSITIVE_BARRIER);
 					}
 				}
@@ -1079,38 +1130,673 @@ CBS::CBS(vector<SingleAgentSolver*>& search_engines,
 	mutex_helper.search_engines = search_engines;
 }
 
-CBS::CBS(const Instance& instance, bool sipp, int screen) :
-		screen(screen), focal_w(1),
-		num_of_agents(instance.getDefaultNumberOfAgents()),
-		mdd_helper(initial_constraints, search_engines),
-		rectangle_helper(instance),
-		mutex_helper(instance, initial_constraints),
-		corridor_helper(search_engines, initial_constraints),
-		heuristic_helper(instance.getDefaultNumberOfAgents(), paths, search_engines, initial_constraints, mdd_helper)
+
+CBS::CBS(Instance& instance, bool sipp, int screen) :
+        screen(screen), focal_w(1),
+        num_of_agents(instance.getDefaultNumberOfAgents()),
+        mdd_helper(initial_constraints, search_engines),
+        rectangle_helper(instance),
+        mutex_helper(instance, initial_constraints),
+        corridor_helper(search_engines, initial_constraints),
+        heuristic_helper(instance.getDefaultNumberOfAgents(), paths, search_engines, initial_constraints, mdd_helper)
 {
-	clock_t t = clock();
-	initial_constraints.resize(num_of_agents,
-							   ConstraintTable(instance.num_of_cols, instance.map_size));
+    clock_t t = clock();
+    initial_constraints.resize(num_of_agents,
+                               ConstraintTable(instance.num_of_cols, instance.map_size));
 
-	search_engines.resize(num_of_agents);
-	for (int i = 0; i < num_of_agents; i++)
-	{
-		if (sipp)
-			search_engines[i] = new SIPP(instance, i);
-		else
-			search_engines[i] = new SpaceTimeAStar(instance, i);
+    search_engines.resize(num_of_agents);
 
-		initial_constraints[i].goal_location = search_engines[i]->goal_location;
-	}
-	runtime_preprocessing = (double) (clock() - t) / CLOCKS_PER_SEC;
+    std::cout << "num_of_agents: " << num_of_agents << std::endl;
 
-	mutex_helper.search_engines = search_engines;
+    for (int i = 0; i < num_of_agents; i++)
+    {
+        if (sipp)
+            search_engines[i] = new SIPP(instance, i);
+        else
+            search_engines[i] = new SpaceTimeAStar(instance, i);
 
-	if (screen >= 2) // print start and goals
-	{
-		instance.printAgents();
-	}
+        initial_constraints[i].goal_location = search_engines[i]->goal_location;
+    }
+    runtime_preprocessing = (double) (clock() - t) / CLOCKS_PER_SEC;
+
+    mutex_helper.search_engines = search_engines;
+
+    if (screen >= 2) // print start and goals
+    {
+        instance.printAgents();
+    }
 }
+
+
+CBS::CBS(Instance& instance, int screen):
+        screen(screen), focal_w(1),
+        num_of_agents(instance.getDefaultNumberOfAgents()),
+        mdd_helper(initial_constraints, search_engines),
+        rectangle_helper(instance),
+        mutex_helper(instance, initial_constraints),
+        corridor_helper(search_engines, initial_constraints),
+        heuristic_helper(instance.getDefaultNumberOfAgents(), paths, search_engines, initial_constraints, mdd_helper)
+{
+    clock_t t = clock();
+    initial_constraints.resize(num_of_agents,
+                               ConstraintTable(instance.num_of_cols, instance.map_size));
+
+    search_engines.resize(num_of_agents);
+
+    std::cout << "num_of_agents: " << num_of_agents << std::endl;
+
+    for (int i = 0; i < num_of_agents; i++)
+    {
+
+        search_engines[i] = new SpaceTimeAStar(instance, i);
+
+        initial_constraints[i].goal_location = search_engines[i]->goal_location;
+    }
+    runtime_preprocessing = (double) (clock() - t) / CLOCKS_PER_SEC;
+
+    mutex_helper.search_engines = search_engines;
+
+    if (screen >= 2) // print start and goals
+    {
+        instance.printAgents();
+    }
+
+}
+
+
+void CBS::dijkstra()
+{
+
+    for (int i = 0; i < num_of_agents; i++)
+    {
+
+//        search_engines[i] = new SpaceTimeAStar(instance, i);
+//        initial_constraints[i].goal_location = search_engines[i]->goal_location;
+
+//        cout << "search_engines[i]->instance.printMap()" << endl;
+//        search_engines[i]->instance.printMap();
+        search_engines[i]->compute_heuristics();
+    }
+}
+
+
+bool CBS::solve(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v, vector<DynamicObstacle>& obstacle_add_v){
+
+
+    /// obstacle delete case
+    solveObstacleDeleted(instance, obstacle_delete_v);
+
+    /// obstacle added case
+
+
+    //////////////////////////////////////////////////////////
+    // set timer
+    start = clock();
+
+    solution_found = false;
+
+    std::cout << "open_list.size(): " << open_list.size() << " " << !open_list.empty() << std::endl;
+
+    while (!open_list.empty() && !solution_found)
+    {
+
+        updateFocalList();
+        if (min_f_val >= cost_upperbound)
+        {
+            solution_cost = (int) min_f_val;
+            solution_found = false;
+            break;
+        }
+        runtime = (double) (clock() - start) / CLOCKS_PER_SEC;
+        if (runtime > time_limit || num_HL_expanded > node_limit
+            || heuristic_helper.sub_instances.size() >= MAX_NUM_STATS)
+        {  // time/node out
+            solution_cost = -1;
+            solution_found = false;
+            break;
+        }
+
+        CBSNode* curr = focal_list.top();
+        focal_list.pop();
+//        open_list.erase(curr->open_handle);
+
+
+        // takes the paths_found_initially and UPDATE all constrained paths found for agents from curr to dummy_start (and lower-bounds)
+        updatePaths(curr);
+
+        cout << "************printPaths************" << endl;
+        printPaths();
+
+        cout << "curr->g_val: " << curr->g_val << endl;
+        cout << "curr->h_val: " << curr->h_val << endl;
+
+
+        if (screen > 1)
+            cout << endl << "Pop " << *curr << endl;
+
+        bool is_new_obstacle_violate = checkViolateObstacle(*curr, obstacle_add_v);
+
+        cout << "is_new_obstacle_violate: " << is_new_obstacle_violate << endl;
+        cout << "curr->h_computed: " << curr->h_computed << endl;
+
+        if ((curr->unknownConf.size() + curr->conflicts.size() == 0) && !is_new_obstacle_violate) //no conflicts
+        {// found a solution (and finish the while look)
+            solution_found = true;
+            solution_cost = curr->g_val;
+            goal_node = curr;
+            break;
+        }
+
+
+        if (!curr->h_computed) // heuristics has not been computed yet
+        {
+            runtime = (double) (clock() - start) / CLOCKS_PER_SEC;
+            bool succ = heuristic_helper.computeInformedHeuristics(*curr, time_limit - runtime);
+            runtime = (double) (clock() - start) / CLOCKS_PER_SEC;
+            if (runtime > time_limit)
+            {  // timeout
+                solution_cost = -1;
+                solution_found = false;
+                break;
+            }
+            if (!succ) // no solution, so prune this node
+            {
+                curr->clear();
+                continue;
+            }
+
+            // reinsert the node
+            open_list.erase(curr->open_handle);
+            curr->open_handle = open_list.push(curr);
+            if (curr->g_val + curr->h_val <= focal_list_threshold)
+                curr->focal_handle = focal_list.push(curr);
+            if (screen == 2)
+            {
+                cout << "	Reinsert " << *curr << endl;
+            }
+            continue;
+        }
+
+
+
+        //Expand the node
+        num_HL_expanded++;
+        curr->time_expanded = num_HL_expanded;
+        bool foundBypass = true;
+        int foundBypass_count = 0;
+        while (foundBypass)
+        {
+            foundBypass_count++;
+            std::cout << "foundBypass_count: " << foundBypass_count << std::endl;
+
+            if (curr->unknownConf.size() + curr->conflicts.size() == 0 && !is_new_obstacle_violate) //no conflicts
+            {// found a solution (and finish the while look)
+                solution_found = true;
+                solution_cost = curr->g_val;
+                goal_node = curr;
+                break;
+            }
+
+            open_list.erase(curr->open_handle);
+
+            foundBypass = false;
+            CBSNode* child[2] = { new CBSNode(), new CBSNode() };
+
+            curr->conflict = chooseConflict(*curr);
+
+//            if (curr->conflict == nullptr) {
+//                findConflicts(*curr);
+//                curr->conflict = chooseConflict(*curr);
+//            }
+//
+//            cout << "stop???" << endl;
+//            cout << curr->conflict << endl;
+
+            child[0]->constraints = curr->conflict->constraint1;
+            child[1]->constraints = curr->conflict->constraint2;
+
+
+           /* if (disjoint_splitting && curr->conflict->type == conflict_type::STANDARD)
+            {
+                int first = (bool) (rand() % 2);
+                if (first) // disjoint splitting on the first agent
+                {
+                    child[0]->constraints = curr->conflict->constraint1;
+                    int a, x, y, t;
+                    constraint_type type;
+                    tie(a, x, y, t, type) = curr->conflict->constraint1.back();
+                    if (type == constraint_type::VERTEX)
+                    {
+                        child[1]->constraints.emplace_back(a, x, y, t, constraint_type::POSITIVE_VERTEX);
+                    }
+                    else
+                    {
+                        assert(type == constraint_type::EDGE);
+                        child[1]->constraints.emplace_back(a, x, y, t, constraint_type::POSITIVE_EDGE);
+                    }
+                }
+                else // disjoint splitting on the second agent
+                {
+                    child[1]->constraints = curr->conflict->constraint2;
+                    int a, x, y, t;
+                    constraint_type type;
+                    tie(a, x, y, t, type) = curr->conflict->constraint2.back();
+                    if (type == constraint_type::VERTEX)
+                    {
+                        child[0]->constraints.emplace_back(a, x, y, t, constraint_type::POSITIVE_VERTEX);
+                    }
+                    else
+                    {
+                        assert(type == constraint_type::EDGE);
+                        child[0]->constraints.emplace_back(a, x, y, t, constraint_type::POSITIVE_EDGE);
+                    }
+                }
+            }
+            else
+            {
+                child[0]->constraints = curr->conflict->constraint1;
+                child[1]->constraints = curr->conflict->constraint2;
+                if (curr->conflict->type == conflict_type::RECTANGLE && rectangle_helper.strategy == rectangle_strategy::DR)
+                {
+                    int i = (bool)(rand() % 2);
+                    for (const auto constraint : child[1 - i]->constraints)
+                    {
+                        child[i]->constraints.emplace_back(get<0>(constraint), get<1>(constraint), get<2>(constraint), get<3>(constraint),
+                                                           constraint_type::POSITIVE_BARRIER);
+                    }
+                }
+                else if (curr->conflict->type == conflict_type::CORRIDOR && corridor_helper.getStrategy() == corridor_strategy::DC)
+                {
+                    int i = (bool)(rand() % 2);
+                    assert(child[1 - i]->constraints.size() == 1);
+                    auto constraint = child[1 - i]->constraints.front();
+                    child[i]->constraints.emplace_back(get<0>(constraint), get<1>(constraint), get<2>(constraint), get<3>(constraint),
+                                                       constraint_type::POSITIVE_RANGE);
+                }
+            } */
+
+            if (screen > 1)
+                cout << "	Expand " << *curr << endl <<
+                     "	on " << *(curr->conflict) << endl;
+
+            bool solved[2] = { false, false };
+            vector<vector<PathEntry>*> copy(paths);
+
+            for (int i = 0; i < 2; i++)
+            {
+                if (i > 0)
+                    paths = copy;
+                solved[i] = generateChild(child[i], curr);
+                if (!solved[i])
+                {
+                    delete child[i];
+                    continue;
+                }
+                if (child[i]->g_val + child[i]->h_val == min_f_val && curr->unknownConf.size() + curr->conflicts.size() == 0) //no conflicts
+                {// found a solution (and finish the while look)
+                    break;
+                }
+                else if (bypass && child[i]->g_val == curr->g_val && child[i]->tie_breaking < curr->tie_breaking) // Bypass1
+                {
+                    if (i == 1 && !solved[0])
+                        continue;
+                    foundBypass = true;
+                    num_adopt_bypass++;
+                    curr->conflicts = child[i]->conflicts;
+                    curr->unknownConf = child[i]->unknownConf;
+                    curr->tie_breaking = child[i]->tie_breaking;
+                    curr->conflict = nullptr;
+                    for (const auto& path : child[i]->paths) // update paths
+                    {
+                        auto p = curr->paths.begin();
+                        while (p != curr->paths.end())
+                        {
+                            if (path.first == p->first)
+                            {
+                                p->second = path.second;
+                                paths[p->first] = &p->second;
+                                break;
+                            }
+                            ++p;
+                        }
+                        if (p == curr->paths.end())
+                        {
+                            curr->paths.emplace_back(path);
+                            paths[path.first] = &curr->paths.back().second;
+                        }
+                    }
+                    if (screen > 1)
+                    {
+                        cout << "	Update " << *curr << endl;
+                    }
+                    break;
+                }
+            }
+            if (foundBypass)
+            {
+                for (auto & i : child)
+                {
+                    delete i;
+                    i = nullptr;
+                }
+                if (PC) // prioritize conflicts
+                    classifyConflicts(*curr); // classify the new-detected conflicts
+            }
+            else
+            {
+                for (int i = 0; i < 2; i++)
+                {
+                    cout << "solved[i] " << i << ": " << solved[i] << endl;
+                    if (solved[i])
+                    {
+                        pushNode(child[i]);
+                        if (screen > 1)
+                        {
+                            cout << "		Generate " << *child[i] << endl;
+                        }
+                    }
+
+//                    for (auto item = child[i]->paths.begin();
+//                    item != child[i]->paths.end(); item++) {
+//                        cout << item->first << ", " << item->second << endl;
+//                    }
+                }
+
+            }
+        }
+
+        cout << "open_list.size(): " << open_list.size() << endl;
+        cout << "curr->conflict: " << curr->conflict->type << endl;
+        if (curr->conflict != nullptr)
+        {
+            switch (curr->conflict->type)
+            {
+                case conflict_type::RECTANGLE:
+                    num_rectangle_conflicts++;
+                    break;
+                case conflict_type::CORRIDOR:
+                    num_corridor_conflicts++;
+                    break;
+                case conflict_type::TARGET:
+                    num_target_conflicts++;
+                    break;
+                case conflict_type::STANDARD:
+                    num_standard_conflicts++;
+                    break;
+                case conflict_type::MUTEX:
+                    num_mutex_conflicts++;
+                    break;
+            }
+        }
+//        curr->printConflictGraph(2);
+        curr->clear();
+    }  // end of while loop
+
+
+    runtime = (double) (clock() - start) / CLOCKS_PER_SEC;
+    if (solution_found && !validateSolution())
+    {
+        cout << "Solution invalid!!!" << endl;
+        printPaths();
+        exit(-1);
+    }
+    if (screen == 2)
+        printPaths();
+    if (screen > 0) // 1 or 2
+        printResults();
+    return solution_found;
+
+}
+
+bool CBS::checkViolateObstacle(CBSNode& curr, vector<DynamicObstacle>& obstacle_add_v){
+
+    if (obstacle_add_v.empty()){
+        return false;
+    }
+
+    for (int a = 0; a < num_of_agents; a++)
+    {
+        for(auto item: obstacle_add_v){
+            int obstacle_add_loc = 5 * item.y + item.x;
+            size_t path_length = paths[a]->size();
+            for (size_t timestep = 0; timestep < path_length; timestep++) {
+                int a_loc = paths[a]->at(timestep).location;
+                if (obstacle_add_loc == a_loc){
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+
+bool CBS::solveObstacleDeleted(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v){
+
+    if(obstacle_delete_v.empty()) {
+        return false;
+    }
+
+    /////////////////////////////////////////////////////////
+    struct Node
+    {
+        int location;
+        int value;
+
+        Node() = default;
+        Node(int location, int value) : location(location), value(value) {}
+        // the following is used to compare nodes in the OPEN list
+        struct compare_node
+        {
+            // returns true if n1 > n2 (note -- this gives us *min*-heap).
+            bool operator()(const Node& n1, const Node& n2) const
+            {
+                return n1.value >= n2.value;
+            }
+        };  // used by OPEN (heap) to compare nodes (top of the heap has min f-val, and then highest g-val)
+    };
+
+
+    // generate a heap that can save nodes (and a open_handle)
+    boost::heap::pairing_heap<Node, boost::heap::compare<Node::compare_node> > heap;
+
+    vector<int> costs_new;
+    costs_new.resize(num_of_agents, MAX_TIMESTEP);
+
+
+    for(auto item_obstacle: obstacle_delete_v) {
+        int obstacle_pos = 5 * item_obstacle.y + item_obstacle.x;
+        vector<int> my_heuristic;
+        my_heuristic.resize(instance.map_size, MAX_TIMESTEP);
+
+        Node root(obstacle_pos, 0);
+        my_heuristic[obstacle_pos] = 0;
+        heap.push(root);  // add root to heap
+        while (!heap.empty()) {
+            Node curr = heap.top();
+            heap.pop();
+            for(int next_location: instance.getNeighbors(curr.location)) {
+                if (my_heuristic[next_location] > curr.value + 1)
+                {
+                    my_heuristic[next_location] = curr.value + 1;
+                    Node next(next_location, curr.value + 1);
+                    heap.push(next);
+                }
+            }
+
+        }
+
+
+        for (int agent = 0; agent < num_of_agents; agent++) {
+            int start_location = instance.get_start_locations()[agent];
+            int goal_location = instance.get_goal_locations()[agent];
+
+            int cost = my_heuristic[start_location] + my_heuristic[goal_location];
+
+            costs_new[agent] = min(cost, costs_new[agent]);
+
+        }
+    }
+
+
+    recomputePathCost(costs_new);
+
+
+    return true;
+
+}
+
+bool CBS::recomputePathCost(const vector<int>& costs_new) {
+
+    int f_cost_new = std::accumulate(costs_new.begin(), costs_new.end(), 0);
+    cout << "f_cost_new: " << f_cost_new << endl;
+    for (CBSNode* n: open_list){
+        int f_val = n->h_val + n->g_val;
+        cout << "f_val: " << f_val << endl;
+
+        if (f_cost_new < f_val) {
+            /// RecomputePathCost
+            cout << "RecomputePathCost" << endl;
+
+
+            break;
+
+        }
+
+    }
+
+    ///test
+//    CBSNode* test_node = new CBSNode();
+//    test_node->g_val = 0;
+//    int test_agent = 0;
+//    paths.clear();
+//    paths.resize(2, nullptr);
+//
+//    paths[0] = nullptr;
+//    paths[1] = nullptr;
+//    auto test_path = search_engines[test_agent]->findPath(*test_node,
+//                                                          initial_constraints[test_agent], paths, test_agent, 0);
+//
+//    cout << "test_path: " << test_path << endl;
+//    test_agent = 1;
+//    test_path = search_engines[test_agent]->findPath(*test_node,
+//                                                     initial_constraints[test_agent], paths, test_agent, 0);
+//    cout << "test_path: " << test_path << endl;
+
+
+    ////
+//    paths.clear();
+//    paths.resize(num_of_agents, nullptr);
+
+    focal_list_threshold = 9;
+
+    for(CBSNode* node: open_list) {
+        CBSNode* curr = node;
+        cout << "node" << endl;
+        while(curr != nullptr){
+
+            for(auto constraint:curr->constraints) {
+                cout << "constraint: " << constraint << endl;
+            }
+
+//            curr->constraints.clear();
+//            findConflicts(*curr);
+
+            for(auto& item_path: curr->paths) {
+                int agent = item_path.first;
+
+//                CBSNode *new_node = new CBSNode();
+                Path path_t = search_engines[agent]->findPath(*curr, initial_constraints[agent], paths, agent, 0);
+                item_path.second = path_t;
+
+                cout << "new path: " << item_path.first << ": " << item_path.second << endl;
+
+                curr->g_val = (int)item_path.second.size() - 1;
+//                curr->constraints = new_node->constraints;
+//                curr->conflict = new_node->conflict;
+//                delete new_node;
+//                new_node = nullptr;
+
+//                paths_found_initially[agent] = path_t;
+            }
+
+            curr = curr->parent;
+        }
+
+    }
+
+//    for(CBSNode* node: open_list) {
+//        CBSNode* curr = node;
+//        cout << "node" << endl;
+//
+//        while(curr != nullptr){
+//
+//
+//            for(auto& item_path: curr->paths) {
+//                int agent = item_path.first;
+//                Path path_t = search_engines[agent]->findPath(*curr, initial_constraints[agent], paths, agent, 0);
+//                item_path.second = path_t;
+//
+//                cout << "new path: " << item_path.first << ": " << item_path.second << endl;
+//
+//            }
+//
+//            curr = curr->parent;
+//        }
+//    }
+
+
+
+    /// test3
+    for(CBSNode* node: open_list) {
+        CBSNode* curr = node;
+        cout << "after node updated " << endl;
+        while(curr!= nullptr){
+
+            for(auto item_path: curr->paths) {
+
+                cout << "after path updated: " << item_path.first << ": " << item_path.second << endl;
+                cout << "after path updated cost: " << curr->g_val + curr->h_val << endl;
+            }
+            curr = curr->parent;
+        }
+    }
+
+
+    return true;
+}
+
+void CBS::printTestInfos() {
+    cout << "print test infos" << endl;
+
+    cout << "open_list.size(): " << open_list.size() << endl;
+
+    CBSNode* node = open_list.top();
+    cout << "node: " << node << endl;
+    cout << "node->parent: " << node->parent << endl;
+    cout << "node->paths.size(): " << node->paths.size() << endl;
+    cout << "node->depth: " << node->depth << endl;
+    cout << "node->g_val: " << node->g_val << endl;
+    cout << "node->h_val: " << node->h_val << endl;
+    cout << "min_f_val: " << min_f_val << endl;
+
+//    for(CBSNode* node: open_list) {
+//        CBSNode* curr = node;
+//        cout << "after node updated " << endl;
+//        while(curr!= nullptr){
+//
+//            for(auto item_path: curr->paths) {
+//
+//                cout << "after path updated: " << item_path.first << ": " << item_path.second << endl;
+//                cout << "after path updated cost: " << curr->g_val + curr->h_val << endl;
+//            }
+//            curr = curr->parent;
+//        }
+//    }
+}
+
+
+
 
 bool CBS::generateRoot()
 {
@@ -1187,8 +1873,20 @@ bool CBS::generateRoot()
 		printPaths();
 	}
 
+//    open_list.
+    cout << "open_list.size(): " << open_list.size() << endl;
+
+    ///test1
+    for(auto constraint:dummy_start->constraints) {
+        cout << "dummy_start constraint: " << constraint << endl;
+    }
+
+    printTestInfos();
+
+
 	return true;
 }
+
 
 inline void CBS::releaseNodes()
 {

@@ -84,7 +84,7 @@ public:
 	{
 		return max(get_DH_heuristic(from, to), instance.getManhattanDistance(from, to));
 	}
-	const Instance& instance;
+    Instance& instance;
 
 	virtual Path findPath(const CBSNode& node, const ConstraintTable& initial_constraints,
 		const vector<Path*>& paths, int agent, int lower_bound) = 0;
@@ -97,17 +97,19 @@ public:
 	// int getStartLocation() const {return instance.start_locations[agent]; }
 	// int getGoalLocation() const {return instance.goal_locations[agent]; }
 
-	SingleAgentSolver(const Instance& instance, int agent) :
+	SingleAgentSolver(Instance& instance, int agent) :
 		instance(instance), //agent(agent), 
 		start_location(instance.start_locations[agent]),
 		goal_location(instance.goal_locations[agent])
 	{
-		compute_heuristics();
+//		compute_heuristics();
 	}
 
 	virtual ~SingleAgentSolver() {}
 
-protected:
+
+//protected:
+public:
 	void compute_heuristics();
 	int get_DH_heuristic(int from, int to) const { return abs(my_heuristic[from] - my_heuristic[to]); }
 };

@@ -41,14 +41,14 @@ int main(int argc, char** argv)
 		("warehouseWidth", po::value<int>()->default_value(0), "width of working stations on both sides, for generating instances")
 
 		// params for CBS
-		("heuristics", po::value<string>()->default_value("WDG"), "heuristics for the high-level search (Zero, CG,DG, WDG)")
-		("prioritizingConflicts", po::value<bool>()->default_value(true), "conflict priortization. If true, conflictSelection is used as a tie-breaking rule.")
-		("bypass", po::value<bool>()->default_value(true), "Bypass1")
+		("heuristics", po::value<string>()->default_value("Zero"), "heuristics for the high-level search (Zero, CG,DG, WDG)")
+		("prioritizingConflicts", po::value<bool>()->default_value(false), "conflict priortization. If true, conflictSelection is used as a tie-breaking rule.")
+		("bypass", po::value<bool>()->default_value(false), "Bypass1")
 		("disjointSplitting", po::value<bool>()->default_value(false), "disjoint splitting")
-		("rectangleReasoning", po::value<string>()->default_value("GR"), "rectangle reasoning strategy (None, R, RM, GR, Disjoint)")
-		("corridorReasoning", po::value<string>()->default_value("GC"), " corridor reasoning strategy (None, C, PC, STC, GC, Disjoint")
+		("rectangleReasoning", po::value<string>()->default_value("None"), "rectangle reasoning strategy (None, R, RM, GR, Disjoint)")
+		("corridorReasoning", po::value<string>()->default_value("None"), " corridor reasoning strategy (None, C, PC, STC, GC, Disjoint")
 		("mutexReasoning", po::value<bool>()->default_value(false), "Using mutex reasoning")
-		("targetReasoning", po::value<bool>()->default_value(true), "Using target reasoning")
+		("targetReasoning", po::value<bool>()->default_value(false), "Using target reasoning")
 		("restart", po::value<int>()->default_value(1), "number of restart times (at least 1)")
 		("sipp", po::value<bool>()->default_value(false), "using sipp as the single agent solver")
 		;
@@ -129,11 +129,20 @@ int main(int argc, char** argv)
 
 	int runs = vm["restart"].as<int>();
 
+//    instance.printMap();
 
 	//////////////////////////////////////////////////////////////////////
 	/// initialize the solver
     //////////////////////////////////////////////////////////////////////
-	CBS cbs(instance, vm["sipp"].as<bool>(), vm["screen"].as<int>());
+
+    int pos = 5 * 2 + 1;
+//    instance.changeMap(pos, true);
+    instance.printMap();
+
+//	CBS cbs(instance, vm["sipp"].as<bool>(), vm["screen"].as<int>());
+
+    CBS cbs(instance, vm["screen"].as<int>());
+
 	cbs.setPrioritizeConflicts(vm["prioritizingConflicts"].as<bool>());
 	cbs.setDisjointSplitting(vm["disjointSplitting"].as<bool>());
 	cbs.setBypass(vm["bypass"].as<bool>());
@@ -151,16 +160,61 @@ int main(int argc, char** argv)
     //////////////////////////////////////////////////////////////////////
 	double runtime = 0;
 	int min_f_val = 0;
-	for (int i = 0; i < runs; i++)
-	{
-		cbs.clear();
-		cbs.solve(vm["cutoffTime"].as<double>(), min_f_val);
-		runtime += cbs.runtime;
-		if (cbs.solution_found)
-			break;
-		min_f_val = (int) cbs.min_f_val;
-		cbs.randomRoot = true;
-	}
+    const int CHANGE_TIMES = 2;
+
+    vector<DynamicObstacle> obstacle_add_v;
+    vector<DynamicObstacle> obstacle_delete_v;
+
+//    obstacle_delete_v.emplace_back(1,2);
+//    obstacle_add_v.emplace_back(1,0);
+//    obstacle_add_v.emplace_back(3,0);
+//    obstacle_add_v.emplace_back(1,2);
+//    obstacle_add_v.emplace_back(4,0);
+
+    int current_step = 0;
+
+    while (current_step < CHANGE_TIMES){
+
+        if (current_step == 0){
+            cbs.dijkstra();
+            cbs.clear();
+            cbs.initSolveParams(vm["cutoffTime"].as<double>(), min_f_val);
+            cbs.generateRoot();
+        }
+
+        if (current_step == 2) {
+            obstacle_add_v.emplace_back(3,0);
+            for(auto item: obstacle_add_v){
+                instance.changeMap((5 * item.y + item.x), true);
+            }
+            cbs.dijkstra();
+
+        }
+
+        if (current_step == 1) {
+            obstacle_delete_v.emplace_back(1,2);
+            for(auto item_obstacle: obstacle_delete_v) {
+                int obstacle_pos = 5 * item_obstacle.y + item_obstacle.x;
+                instance.changeMap(obstacle_pos, false);
+            }
+
+            cbs.dijkstra();
+        }
+
+
+        cout << "@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+        cbs.solve(instance, obstacle_delete_v, obstacle_add_v);
+
+        current_step++;
+        runtime += cbs.runtime;
+//        min_f_val = (int) cbs.min_f_val;
+        min_f_val = 0;
+        cbs.set_min_f_val(min_f_val);
+
+//        cbs.printTestInfos();
+    }
+
+
 	cbs.runtime = runtime;
 
     //////////////////////////////////////////////////////////////////////
@@ -168,7 +222,7 @@ int main(int argc, char** argv)
     //////////////////////////////////////////////////////////////////////
 	if (vm.count("output"))
 		cbs.saveResults(vm["output"].as<string>(), vm["agents"].as<string>()+":"+ vm["agentIdx"].as<string>());
-	// cbs.saveCT(vm["output"].as<string>() + ".tree"); // for debug
+	 cbs.saveCT(vm["output"].as<string>() + ".tree"); // for debug
 	if (vm["stats"].as<bool>())
 	{
 		cbs.saveStats(vm["output"].as<string>(), vm["agents"].as<string>() + ":" + vm["agentIdx"].as<string>());

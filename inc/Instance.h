@@ -101,6 +101,13 @@ public:
 
 	int getDefaultNumberOfAgents() const { return num_of_agents; }
 
+	void printMap() const;
+
+    void changeMap(int pos, bool is_obstacle) { my_map[pos] = is_obstacle; }
+
+    vector<int>& get_start_locations()  { return start_locations; }
+    vector<int>& get_goal_locations()  { return goal_locations; }
+
 private:
 	  // int moves_offset[MOVE_COUNT];
 	  vector<bool> my_map;
@@ -112,7 +119,7 @@ private:
 	  vector<int> goal_locations;
 
 	bool loadMap();
-	void printMap() const;
+//	void printMap() const;
 	void saveMap() const;
 
 	bool loadAgents();
