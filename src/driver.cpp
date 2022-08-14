@@ -135,8 +135,6 @@ int main(int argc, char** argv)
 	/// initialize the solver
     //////////////////////////////////////////////////////////////////////
 
-    int pos = 5 * 2 + 1;
-//    instance.changeMap(pos, true);
     instance.printMap();
 
 //	CBS cbs(instance, vm["sipp"].as<bool>(), vm["screen"].as<int>());
@@ -170,6 +168,7 @@ int main(int argc, char** argv)
 //    obstacle_add_v.emplace_back(3,0);
 //    obstacle_add_v.emplace_back(1,2);
 //    obstacle_add_v.emplace_back(4,0);
+    cout << "instance.getCols(): " << instance.getCols() << endl;
 
     int current_step = 0;
 
@@ -184,8 +183,9 @@ int main(int argc, char** argv)
 
         if (current_step == 2) {
             obstacle_add_v.emplace_back(3,0);
-            for(auto item: obstacle_add_v){
-                instance.changeMap((5 * item.y + item.x), true);
+            for(auto item_obstacle: obstacle_add_v){
+                int obstacle_pos = instance.getCols() * item_obstacle.y + item_obstacle.x;
+                instance.changeMap(obstacle_pos, true);
             }
             cbs.dijkstra();
 
@@ -194,7 +194,7 @@ int main(int argc, char** argv)
         if (current_step == 1) {
             obstacle_delete_v.emplace_back(1,2);
             for(auto item_obstacle: obstacle_delete_v) {
-                int obstacle_pos = 5 * item_obstacle.y + item_obstacle.x;
+                int obstacle_pos = instance.getCols() * item_obstacle.y + item_obstacle.x;
                 instance.changeMap(obstacle_pos, false);
             }
 

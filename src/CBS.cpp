@@ -1274,7 +1274,7 @@ bool CBS::solve(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v, 
         if (screen > 1)
             cout << endl << "Pop " << *curr << endl;
 
-        bool is_new_obstacle_violate = checkViolateObstacle(*curr, obstacle_add_v);
+        bool is_new_obstacle_violate = checkViolateObstacle(instance, *curr, obstacle_add_v);
 
         cout << "is_new_obstacle_violate: " << is_new_obstacle_violate << endl;
         cout << "curr->h_computed: " << curr->h_computed << endl;
@@ -1548,7 +1548,7 @@ bool CBS::solve(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v, 
 
 }
 
-bool CBS::checkViolateObstacle(CBSNode& curr, vector<DynamicObstacle>& obstacle_add_v){
+bool CBS::checkViolateObstacle(Instance& instance, CBSNode& curr, vector<DynamicObstacle>& obstacle_add_v){
 
     if (obstacle_add_v.empty()){
         return false;
@@ -1605,7 +1605,7 @@ bool CBS::solveObstacleDeleted(Instance& instance, vector<DynamicObstacle>& obst
 
 
     for(auto item_obstacle: obstacle_delete_v) {
-        int obstacle_pos = 5 * item_obstacle.y + item_obstacle.x;
+        int obstacle_pos = instance.getCols() * item_obstacle.y + item_obstacle.x;
         vector<int> my_heuristic;
         my_heuristic.resize(instance.map_size, MAX_TIMESTEP);
 
@@ -1639,14 +1639,14 @@ bool CBS::solveObstacleDeleted(Instance& instance, vector<DynamicObstacle>& obst
     }
 
 
-    recomputePathCost(costs_new);
+    recomputePathCost(instance, costs_new);
 
 
     return true;
 
 }
 
-bool CBS::recomputePathCost(const vector<int>& costs_new) {
+bool CBS::recomputePathCost(Instance& instance, const vector<int>& costs_new) {
 
     int f_cost_new = std::accumulate(costs_new.begin(), costs_new.end(), 0);
     cout << "f_cost_new: " << f_cost_new << endl;
