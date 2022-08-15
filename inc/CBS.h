@@ -91,10 +91,13 @@ public:
 
     bool checkViolateObstacle(Instance& instance, CBSNode& curr, vector<DynamicObstacle>& obstacle_add_v);
 
+    bool recomputePathCost(Instance& instance, CBSNode* curr, const vector<DynamicObstacle>& obstacle_add_v);
+
     bool solveObstacleDeleted(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v);
 
 
     bool recomputePathCost(Instance& instance, const vector<int>& costs_new);
+
 
     void printTestInfos();
 private:
