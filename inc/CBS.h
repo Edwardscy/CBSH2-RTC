@@ -98,8 +98,10 @@ public:
 
     bool recomputePathCost(Instance& instance, const vector<int>& costs_new);
 
-
     void printTestInfos();
+
+    int get_open_list_size() { return open_list.size(); }
+
 private:
 	bool target_reasoning; // using target reasoning
 	bool disjoint_splitting; // disjoint splitting

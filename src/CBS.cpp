@@ -1596,45 +1596,64 @@ bool CBS::recomputePathCost(Instance& instance, CBSNode* curr, const vector<Dyna
     }
 
     bool need_update_path = false;
-    vector<bool> updated(num_of_agents, false);
-    for (int a = 0; a < num_of_agents; a++)
+    vector<bool> violated(num_of_agents, false);
+    for (int agent = 0; agent < num_of_agents; agent++)
     {
         for(auto item: obstacle_add_v){
             int obstacle_add_loc = instance.getCols() * item.y + item.x;
-            size_t path_length = paths[a]->size();
+            size_t path_length = paths[agent]->size();
             for (size_t timestep = 0; timestep < path_length; timestep++) {
-                int a_loc = paths[a]->at(timestep).location;
+                int a_loc = paths[agent]->at(timestep).location;
                 if (obstacle_add_loc == a_loc){
-                    updated[a] = true;
+                    violated[agent] = true;
                     need_update_path = true;
                     break;
                 }
             }
-            if (updated[a] == true) {
+            if (violated[agent] == true) {
                 break;
             }
         }
     }
 
+    vector<bool> updated(num_of_agents, false);
     CBSNode* node = curr;
-    while (node != nullptr) {
-        for(auto& item_path: node->paths) {
+    while (curr != nullptr) {
+        for(auto item_path: curr->paths) {
             int agent = item_path.first;
-            if(updated[agent] == true) {
-                Path path_t = search_engines[agent]->findPath(*node, initial_constraints[agent], paths, agent, 0);
-                cout << "recomputePathCost path_t: " << agent << ": " << path_t << ", " << path_t.empty() << endl;
-                if (path_t.empty()) {
-                    return true;
-                }
+            if (node == curr) {
+                updated[agent] = true;
+            }
 
-                int cost_old = (int)item_path.second.size() - 1;
-                item_path.second = path_t;
-                node->g_val = node->g_val - cost_old + ((int)path_t.size() - 1);
-
+            else if(!updated[agent]) {
+                node->paths.emplace_back(agent, item_path.second);
+                updated[agent] = true;
             }
         }
-        node = node->parent;
+        curr = curr->parent;
     }
+
+    for(int i = 0; i < num_of_agents; i++) {
+        if (!updated[i]) {
+            node->paths.emplace_back(i, paths_found_initially[i]);
+        }
+    }
+
+    for(auto& item_path: node->paths) {
+        int agent = item_path.first;
+        if(violated[agent] == true) {
+            Path new_path = search_engines[agent]->findPath(*node, initial_constraints[agent], paths, agent, 0);
+
+            cout << "recomputePathCost path_t: " << agent << ": " << new_path << ", " << new_path.empty() << endl;
+            if (new_path.empty()) {
+                return true;
+            }
+            int cost_old = (int)item_path.second.size() - 1;
+            item_path.second = new_path;
+            node->g_val = node->g_val - cost_old + ((int)new_path.size() - 1);
+        }
+    }
+
 
     if(need_update_path) {
         updatePaths(curr);

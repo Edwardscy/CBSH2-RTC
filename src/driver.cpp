@@ -158,7 +158,7 @@ int main(int argc, char** argv)
     //////////////////////////////////////////////////////////////////////
 	double runtime = 0;
 	int min_f_val = 0;
-    const int CHANGE_TIMES = 2;
+    const int CHANGE_TIMES = 3;
 
     vector<DynamicObstacle> obstacle_add_v;
     vector<DynamicObstacle> obstacle_delete_v;
@@ -192,7 +192,8 @@ int main(int argc, char** argv)
 
         }
 
-        if (current_step == 3) {
+
+        if (current_step == 2) {
             obstacle_delete_v.emplace_back(1,2);
 //            obstacle_delete_v.emplace_back(0,2);
             for(auto item_obstacle: obstacle_delete_v) {
@@ -203,7 +204,7 @@ int main(int argc, char** argv)
             cbs.dijkstra();
         }
 
-        if (current_step == 2) {
+        if (current_step == 3) {
 //            obstacle_delete_v.emplace_back(1,2);
             obstacle_delete_v.emplace_back(0,2);
             for(auto item_obstacle: obstacle_delete_v) {
@@ -216,6 +217,12 @@ int main(int argc, char** argv)
 
 
         cout << "@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+        if(cbs.get_open_list_size() == 0) {
+            cbs.clear();
+            cbs.initSolveParams(vm["cutoffTime"].as<double>(), min_f_val);
+            cbs.generateRoot();
+        }
+
         cbs.solve(instance, obstacle_delete_v, obstacle_add_v);
 
         current_step++;
