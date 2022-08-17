@@ -575,9 +575,7 @@ void CBS::updateFocalList()
             {
                 n->focal_handle = focal_list.push(n);
             }
-            else if(focal_list.size() == 0) {
-                n->focal_handle = focal_list.push(n);
-            }
+
 		}
 		focal_list_threshold = new_focal_list_threshold;
 		if (screen == 3)
@@ -1271,6 +1269,8 @@ bool CBS::solve(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v, 
         focal_list.pop();
 //        open_list.erase(curr->open_handle);
 
+//        CBSNode* curr = open_list.top();
+
 
         // takes the paths_found_initially and UPDATE all constrained paths found for agents from curr to dummy_start (and lower-bounds)
         updatePaths(curr);
@@ -1326,8 +1326,9 @@ bool CBS::solve(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v, 
             // reinsert the node
             open_list.erase(curr->open_handle);
             curr->open_handle = open_list.push(curr);
-            if (curr->g_val + curr->h_val <= focal_list_threshold)
+            if (curr->g_val + curr->h_val <= focal_list_threshold) {
                 curr->focal_handle = focal_list.push(curr);
+            }
             if (screen == 2)
             {
                 cout << "	Reinsert " << *curr << endl;
@@ -1717,144 +1718,66 @@ bool CBS::solveObstacleDeleted(Instance& instance, vector<DynamicObstacle>& obst
 
     recomputePathCost(instance, costs_new);
 
-
     return true;
 
 }
 
 bool CBS::recomputePathCost(Instance& instance, const vector<int>& costs_new) {
     cout << "RecomputePathCost" << endl;
+    cout << "open_list.size(): " << open_list.size() << endl;
+    cout << "focal_list.size(): " << focal_list.size() << endl;
 
-    for (CBSNode* node: open_list){
+    for(CBSNode* node: open_list) {
+        vector<bool> updated(num_of_agents, false);
         CBSNode* curr = node;
-        while(curr != nullptr) {
 
-            for(auto& item_path: curr->paths) {
+        while (curr != nullptr) {
+            for(auto item_path: curr->paths) {
                 int agent = item_path.first;
-                int cost_old = (int)item_path.second.size() - 1;
-                if (cost_old > costs_new[agent]) {
-                    Path path_t = search_engines[agent]->findPath(*curr, initial_constraints[agent], paths, agent, 0);
-                    item_path.second = path_t;
-                    curr->g_val = curr->g_val - cost_old + ((int)path_t.size() - 1);
+                if (curr == node) {
+                    updated[agent] = true;
+                }
+
+                else if(!updated[agent]) {
+                    node->paths.emplace_back(agent, item_path.second);
+                    updated[agent] = true;
                 }
             }
             curr = curr->parent;
         }
 
-    }
-
-
-    ///test
-//    CBSNode* test_node = new CBSNode();
-//    test_node->g_val = 0;
-//    int test_agent = 0;
-//    paths.clear();
-//    paths.resize(2, nullptr);
-//
-//    paths[0] = nullptr;
-//    paths[1] = nullptr;
-//    auto test_path = search_engines[test_agent]->findPath(*test_node,
-//                                                          initial_constraints[test_agent], paths, test_agent, 0);
-//
-//    cout << "test_path: " << test_path << endl;
-//    test_agent = 1;
-//    test_path = search_engines[test_agent]->findPath(*test_node,
-//                                                     initial_constraints[test_agent], paths, test_agent, 0);
-//    cout << "test_path: " << test_path << endl;
-
-
-    ////
-//    paths.clear();
-//    paths.resize(num_of_agents, nullptr);
-
-//    focal_list_threshold = 9;
-
-
-    cout << "open_list.size(): " << open_list.size() << endl;
-    for(CBSNode* curr: open_list) {
-
-        CBSNode* node = curr;
-        while(node != nullptr) {
-            cout << "%%%%%%%%%%%%%%" << endl;
-            cout << "node: " << node << endl;
-            cout << "node->depth: " << node->depth << endl;
-            cout << "node->g_val: " << node->g_val << endl;
-            cout << "node->paths.size(): " << node->paths.size() << endl;
-            cout << "node->parent: " << node->parent << endl;
-
-            for(auto& item_path: node->paths) {
-                int agent = item_path.first;
-                cout << agent << ": " << item_path.second << endl;
+        for(int i = 0; i < num_of_agents; i++) {
+            if (!updated[i]) {
+                node->paths.emplace_back(i, paths_found_initially[i]);
             }
-
-            cout << "%%%%%%%%%%%%%%" << endl;
-
-            node = node->parent;
         }
 
+        for(auto& item_path: node->paths) {
+            int agent = item_path.first;
+            int cost_old = (int)item_path.second.size() - 1;
+            if (cost_old > costs_new[agent]){
+                Path new_path = search_engines[agent]->findPath(*node, initial_constraints[agent], paths, agent, 0);
+
+                item_path.second = new_path;
+                node->g_val = node->g_val - cost_old + ((int)new_path.size() - 1);
+            }
+        }
     }
 
-    for(int i = 0; i < paths_found_initially.size(); ++i) {
-        cout << i << ": " << paths_found_initially[i] << endl;
-    }
+    CBSNode* open_head = open_list.top();
+    focal_list.clear();
+    min_f_val = (double)open_head->g_val;
+    focal_list_threshold = min_f_val * focal_w;
+    focal_list.push(open_head);
 
-    /*
+    /// print
     for(CBSNode* node: open_list) {
-        CBSNode* curr = node;
-        cout << "node" << endl;
-        while(curr != nullptr){
-            cout << "curr->depth: " << curr->depth << endl;
-            for(auto constraint:curr->constraints) {
-                cout << "constraint: " << constraint << endl;
-            }
-
-//            curr->constraints.clear();
-//            findConflicts(*curr);
-
-            for(auto& item_path: curr->paths) {
-                int agent = item_path.first;
-
-//                CBSNode *new_node = new CBSNode();
-                Path path_t = search_engines[agent]->findPath(*curr, initial_constraints[agent], paths, agent, 0);
-                item_path.second = path_t;
-
-                cout << "new path: " << item_path.first << ": " << item_path.second << endl;
-
-                curr->g_val = (int)item_path.second.size() - 1;
-//                curr->constraints = new_node->constraints;
-//                curr->conflict = new_node->conflict;
-//                delete new_node;
-//                new_node = nullptr;
-
-//                paths_found_initially[agent] = path_t;
-            }
-
-            curr = curr->parent;
+        cout << "node->paths.size(): " << node->paths.size() << endl;
+        for(auto path: node->paths) {
+            cout << path.first << ": " << path.second << endl;
         }
-
+        cout << "node->g_val: " << ": " << node->g_val << endl;
     }
-     */
-
-//    for(CBSNode* node: open_list) {
-//        CBSNode* curr = node;
-//        cout << "node" << endl;
-//
-//        while(curr != nullptr){
-//
-//
-//            for(auto& item_path: curr->paths) {
-//                int agent = item_path.first;
-//                Path path_t = search_engines[agent]->findPath(*curr, initial_constraints[agent], paths, agent, 0);
-//                item_path.second = path_t;
-//
-//                cout << "new path: " << item_path.first << ": " << item_path.second << endl;
-//
-//            }
-//
-//            curr = curr->parent;
-//        }
-//    }
-
 
     return true;
 }
