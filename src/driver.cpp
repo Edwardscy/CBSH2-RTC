@@ -181,8 +181,9 @@ int main(int argc, char** argv)
             cbs.generateRoot();
         }
 
-        if (current_step == 1) {
-            obstacle_add_v.emplace_back(3,0);
+        if (current_step == 3) {
+            obstacle_add_v.emplace_back(17,4);
+//            obstacle_add_v.emplace_back(3,0);
 //            obstacle_add_v.emplace_back(2,1);
             for(auto item_obstacle: obstacle_add_v){
                 int obstacle_pos = instance.getCols() * item_obstacle.y + item_obstacle.x;
@@ -193,7 +194,8 @@ int main(int argc, char** argv)
         }
 
 
-        if (current_step == 2) {
+        if (current_step == 1) {
+//            obstacle_delete_v.emplace_back(17,4);
             obstacle_delete_v.emplace_back(1,2);
 //            obstacle_delete_v.emplace_back(0,2);
             for(auto item_obstacle: obstacle_delete_v) {
@@ -204,9 +206,12 @@ int main(int argc, char** argv)
             cbs.dijkstra();
         }
 
-        if (current_step == 3) {
+        if (current_step == 2) {
 //            obstacle_delete_v.emplace_back(1,2);
             obstacle_delete_v.emplace_back(0,2);
+
+//            obstacle_add_v.emplace_back(8, 23);
+
             for(auto item_obstacle: obstacle_delete_v) {
                 int obstacle_pos = instance.getCols() * item_obstacle.y + item_obstacle.x;
                 instance.changeMap(obstacle_pos, false);
@@ -231,7 +236,11 @@ int main(int argc, char** argv)
         min_f_val = 0;
         cbs.set_min_f_val(min_f_val);
 
-//        cbs.printTestInfos();
+        cbs.printTestInfos();
+
+        obstacle_delete_v.clear();
+        obstacle_add_v.clear();
+
     }
 
 

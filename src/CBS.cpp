@@ -1275,8 +1275,8 @@ bool CBS::solve(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v, 
         // takes the paths_found_initially and UPDATE all constrained paths found for agents from curr to dummy_start (and lower-bounds)
         updatePaths(curr);
 
-        cout << "************printPaths************" << endl;
-        printPaths();
+//        cout << "************printPaths************" << endl;
+//        printPaths();
 
         cout << "curr->g_val: " << curr->g_val << endl;
         cout << "curr->h_val: " << curr->h_val << endl;
@@ -1828,6 +1828,8 @@ void CBS::printTestInfos() {
 //            curr = curr->parent;
 //        }
 //    }
+    cout << "************printPaths************" << endl;
+    printPaths();
 }
 
 
