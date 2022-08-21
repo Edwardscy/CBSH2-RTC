@@ -1627,6 +1627,7 @@ bool CBS::recomputePathCost(Instance& instance, CBSNode* curr, const vector<Dyna
 
             else if(!updated[agent]) {
                 node->paths.emplace_back(agent, item_path.second);
+                node->makespan = max(node->makespan, item_path.second.size() - 1);
                 updated[agent] = true;
             }
         }
@@ -1636,7 +1637,12 @@ bool CBS::recomputePathCost(Instance& instance, CBSNode* curr, const vector<Dyna
     for(int i = 0; i < num_of_agents; i++) {
         if (!updated[i]) {
             node->paths.emplace_back(i, paths_found_initially[i]);
+            node->makespan = max(node->makespan, paths_found_initially[i].size() - 1);
         }
+    }
+
+    if(need_update_path) {
+        updatePaths(curr);
     }
 
     for(auto& item_path: node->paths) {
@@ -1655,9 +1661,9 @@ bool CBS::recomputePathCost(Instance& instance, CBSNode* curr, const vector<Dyna
     }
 
 
-    if(need_update_path) {
-        updatePaths(curr);
-    }
+//    if(need_update_path) {
+//        updatePaths(curr);
+//    }
 
     return false;
 }
@@ -1806,6 +1812,10 @@ void CBS::printTestInfos() {
 
     cout << "open_list.size(): " << open_list.size() << endl;
 
+    if(open_list.empty()) {
+        return;
+    }
+
     CBSNode* node = open_list.top();
     cout << "node: " << node << endl;
     cout << "node->parent: " << node->parent << endl;
@@ -1914,12 +1924,11 @@ bool CBS::generateRoot()
     cout << "open_list.size(): " << open_list.size() << endl;
 
     ///test1
-    for(auto constraint:dummy_start->constraints) {
-        cout << "dummy_start constraint: " << constraint << endl;
-    }
+//    for(auto constraint:dummy_start->constraints) {
+//        cout << "dummy_start constraint: " << constraint << endl;
+//    }
 
-    printTestInfos();
-
+//    printTestInfos();
 
 	return true;
 }
