@@ -158,7 +158,7 @@ int main(int argc, char** argv)
     //////////////////////////////////////////////////////////////////////
 	double runtime = 0;
 	int min_f_val = 0;
-    const int CHANGE_TIMES = 3;
+    const int CHANGE_TIMES = 5;
 
     vector<DynamicObstacle> obstacle_add_v;
     vector<DynamicObstacle> obstacle_delete_v;
@@ -182,9 +182,23 @@ int main(int argc, char** argv)
         }
 
         if (current_step == 3) {
-            obstacle_add_v.emplace_back(17,4);
-//            obstacle_add_v.emplace_back(3,0);
-//            obstacle_add_v.emplace_back(2,1);
+            obstacle_add_v.emplace_back(3,4);
+            obstacle_add_v.emplace_back(3,0);
+            obstacle_add_v.emplace_back(2,1);
+            obstacle_add_v.emplace_back(2,2);
+            for(auto item_obstacle: obstacle_add_v){
+                int obstacle_pos = instance.getCols() * item_obstacle.y + item_obstacle.x;
+                instance.changeMap(obstacle_pos, true);
+            }
+            cbs.dijkstra();
+
+        }
+
+        if (current_step == 4) {
+            obstacle_add_v.emplace_back(3,4);
+            obstacle_add_v.emplace_back(3,0);
+            obstacle_add_v.emplace_back(2,1);
+            obstacle_add_v.emplace_back(2,2);
             for(auto item_obstacle: obstacle_add_v){
                 int obstacle_pos = instance.getCols() * item_obstacle.y + item_obstacle.x;
                 instance.changeMap(obstacle_pos, true);
@@ -195,7 +209,7 @@ int main(int argc, char** argv)
 
 
         if (current_step == 1) {
-//            obstacle_delete_v.emplace_back(17,4);
+            obstacle_delete_v.emplace_back(3,4);
             obstacle_delete_v.emplace_back(1,2);
 //            obstacle_delete_v.emplace_back(0,2);
             for(auto item_obstacle: obstacle_delete_v) {
@@ -236,7 +250,8 @@ int main(int argc, char** argv)
         min_f_val = 0;
         cbs.set_min_f_val(min_f_val);
 
-        cbs.printTestInfos();
+//        cbs.printTestInfos();
+//        instance.printMap();
 
         obstacle_delete_v.clear();
         obstacle_add_v.clear();
