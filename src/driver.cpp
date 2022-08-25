@@ -176,14 +176,17 @@ int main(int argc, char** argv)
         else {
             cout << "@@@@@@@@@@@@@@@@@@@@@@@" << endl;
             cout << "cbs.get_open_list_size(): " << cbs.get_open_list_size() << endl;
-            cbs.deleteRandomObstacles(instance, obstacle_delete_v, 10);
+//            cbs.deleteRandomObstacles(instance, obstacle_delete_v, 2);
+            // (rand() % 2)
 
-//            if((rand() % 2) == 1) {
-//                cbs.addRandomObstacles(instance, obstacle_add_v, 2);
-//            }
-//            else if((rand() % 2) == 0) {
-//                cbs.deleteRandomObstacles(instance, obstacle_delete_v, 4);
-//            }
+            if((current_step % 2) == 1) {
+                cout << "addRandomObstacles" << endl;
+                cbs.addRandomObstacles(instance, obstacle_add_v, 1);
+            }
+            else if((current_step % 2) == 0) {
+                cout << "deleteRandomObstacles" << endl;
+                cbs.deleteRandomObstacles(instance, obstacle_delete_v, 2);
+            }
             cbs.dijkstra();
             if(cbs.get_open_list_size() == 0) {
                 cbs.clear();
@@ -191,6 +194,8 @@ int main(int argc, char** argv)
                 bool is_generate_success = cbs.generateRoot();
                 if (!is_generate_success) {
                     current_step++;
+                    obstacle_delete_v.clear();
+                    obstacle_add_v.clear();
                     cout << "cbs.generateRoot() failed" << endl;
                     continue;
                 }
@@ -208,6 +213,7 @@ int main(int argc, char** argv)
 
         obstacle_delete_v.clear();
         obstacle_add_v.clear();
+        instance.printMap();
 
     }
 

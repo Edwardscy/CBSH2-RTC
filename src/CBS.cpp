@@ -1278,8 +1278,6 @@ bool CBS::solve(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v, 
 //        cout << "************printPaths************" << endl;
 //        printPaths();
 
-//        cout << "curr->g_val: " << curr->g_val << endl;
-//        cout << "curr->h_val: " << curr->h_val << endl;
 
 
         if (screen > 1)
@@ -1609,12 +1607,20 @@ bool CBS::recomputePathCost(Instance& instance, CBSNode* curr, const vector<Dyna
         }
     }
 
+    cout << "need_update_path: " << need_update_path << endl;
+
+    if(!need_update_path) {
+        return false;
+    }
+
     vector<bool> updated(num_of_agents, false);
     CBSNode* node = curr;
+    node->makespan = 0;
     while (curr != nullptr) {
         for(auto item_path: curr->paths) {
             int agent = item_path.first;
             if (node == curr) {
+                node->makespan = max(node->makespan, item_path.second.size() - 1);
                 updated[agent] = true;
             }
 
@@ -1634,14 +1640,16 @@ bool CBS::recomputePathCost(Instance& instance, CBSNode* curr, const vector<Dyna
         }
     }
 
-    if(need_update_path) {
-        updatePaths(curr);
-    }
+    updatePaths(curr);
+
+//    if(need_update_path) {
+//        updatePaths(curr);
+//    }
 
     for(auto& item_path: node->paths) {
         int agent = item_path.first;
         if(violated[agent] == true) {
-            Path new_path = search_engines[agent]->findPath(*node, initial_constraints[agent], paths, agent, 0);
+            Path new_path = search_engines[agent]->findPath(*node, initial_constraints[agent], paths, agent, 0); // (int) paths[agent]->size() - 1
 
 //            cout << "recomputePathCost path_t: " << agent << ": " << new_path << ", " << new_path.empty() << endl;
             if (new_path.empty()) {
@@ -1653,10 +1661,10 @@ bool CBS::recomputePathCost(Instance& instance, CBSNode* curr, const vector<Dyna
         }
     }
 
+    findConflicts(*node);
+    cout << "node->conflicts.size(): " << node->conflicts.size() << endl;
+    cout << "node->unknownConf.size(): " << node->unknownConf.size() << endl;
 
-//    if(need_update_path) {
-//        updatePaths(curr);
-//    }
 
     return false;
 }
@@ -1781,12 +1789,14 @@ bool CBS::recomputePathCost(Instance& instance, const vector<int>& costs_new) {
             int cost_old = (int)item_path.second.size() - 1;
             if (cost_old > costs_new[agent]){
 
-                Path new_path = search_engines[agent]->findPath(*node, initial_constraints[agent], paths, agent, (int) paths[agent]->size() - 1);
+                Path new_path = search_engines[agent]->findPath(*node, initial_constraints[agent], paths, agent, 0);
 
                 item_path.second = new_path;
                 node->g_val = node->g_val - cost_old + ((int)new_path.size() - 1);
             }
         }
+
+        findConflicts(*node);
 
     }
 
@@ -2071,11 +2081,14 @@ bool CBS::addRandomObstacles(Instance& instance, vector<DynamicObstacle>& obstac
 
 //    cout << "paths.size(): " << paths.size() << endl;
 
+    obstacle_add_v.clear();
+
     for(auto item: paths) {
         if(item == nullptr) {
             return false;
         }
     }
+
 
     for (int agent = 0; agent < num_of_agents; agent++)
     {
@@ -2085,9 +2098,12 @@ bool CBS::addRandomObstacles(Instance& instance, vector<DynamicObstacle>& obstac
         vector<int> random_index = getNonRepeatingRandomNumber(low, high, size);
         for(auto index: random_index) {
             PathEntry t = paths[agent]->at(index);
-            int x = instance.getColCoordinate(t.location);
-            int y = instance.getRowCoordinate(t.location);
-            obstacle_add_v.emplace_back(x, y);
+            if((!instance.is_goal_location(t.location)) && !instance.is_start_location(t.location)) {
+                int x = instance.getColCoordinate(t.location);
+                int y = instance.getRowCoordinate(t.location);
+                obstacle_add_v.emplace_back(x, y);
+//                cout << "t.location: " << t.location << endl;
+            }
         }
     }
 
@@ -2095,6 +2111,7 @@ bool CBS::addRandomObstacles(Instance& instance, vector<DynamicObstacle>& obstac
     for(auto item_obstacle: obstacle_add_v){
         int obstacle_pos = instance.getCols() * item_obstacle.y + item_obstacle.x;
         instance.changeMap(obstacle_pos, true);
+//        cout << "obstacle_pos: " << obstacle_pos << endl;
     }
     return true;
 }

@@ -108,6 +108,24 @@ public:
     vector<int>& get_start_locations()  { return start_locations; }
     vector<int>& get_goal_locations()  { return goal_locations; }
 
+    bool is_start_location(int loc) {
+        for(auto item: start_locations) {
+            if(loc == item) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool is_goal_location(int loc) {
+        for(auto item: goal_locations) {
+            if(loc == item) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 private:
 	  // int moves_offset[MOVE_COUNT];
 	  vector<bool> my_map;
