@@ -158,20 +158,63 @@ int main(int argc, char** argv)
     //////////////////////////////////////////////////////////////////////
 	double runtime = 0;
 	int min_f_val = 0;
-    const int CHANGE_TIMES = 5;
+    const int CHANGE_TIMES = 10;
 
     vector<DynamicObstacle> obstacle_add_v;
     vector<DynamicObstacle> obstacle_delete_v;
 
-//    obstacle_delete_v.emplace_back(1,2);
-//    obstacle_add_v.emplace_back(1,0);
-//    obstacle_add_v.emplace_back(3,0);
-//    obstacle_add_v.emplace_back(1,2);
-//    obstacle_add_v.emplace_back(4,0);
-    cout << "instance.getCols(): " << instance.getCols() << endl;
-
     int current_step = 0;
+    while (current_step < CHANGE_TIMES) {
+        if(current_step == 0) {
+            cbs.dijkstra();
+            cbs.clear();
+            cbs.initSolveParams(vm["cutoffTime"].as<double>(), min_f_val);
+            bool is_generate_success = cbs.generateRoot();
+            cout << "is_generate_success: " << is_generate_success << endl;
+        }
 
+        else {
+            cout << "@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+            cout << "cbs.get_open_list_size(): " << cbs.get_open_list_size() << endl;
+            cbs.deleteRandomObstacles(instance, obstacle_delete_v, 10);
+
+//            if((rand() % 2) == 1) {
+//                cbs.addRandomObstacles(instance, obstacle_add_v, 2);
+//            }
+//            else if((rand() % 2) == 0) {
+//                cbs.deleteRandomObstacles(instance, obstacle_delete_v, 4);
+//            }
+            cbs.dijkstra();
+            if(cbs.get_open_list_size() == 0) {
+                cbs.clear();
+                cbs.initSolveParams(vm["cutoffTime"].as<double>(), min_f_val);
+                bool is_generate_success = cbs.generateRoot();
+                if (!is_generate_success) {
+                    current_step++;
+                    cout << "cbs.generateRoot() failed" << endl;
+                    continue;
+                }
+            }
+        }
+
+
+        cbs.solve(instance, obstacle_delete_v, obstacle_add_v);
+
+        current_step++;
+        runtime += cbs.runtime;
+        min_f_val = 0;
+        cbs.set_min_f_val(min_f_val);
+
+
+        obstacle_delete_v.clear();
+        obstacle_add_v.clear();
+
+    }
+
+//    instance.printMap();
+
+
+    /*
     while (current_step < CHANGE_TIMES){
 
         if (current_step == 0){
@@ -257,6 +300,8 @@ int main(int argc, char** argv)
         obstacle_add_v.clear();
 
     }
+    */
+
 
 
 	cbs.runtime = runtime;

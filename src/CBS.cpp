@@ -413,7 +413,7 @@ bool CBS::generateChild(CBSNode* node, CBSNode* parent)
 	assert(node->constraints.size() > 0);
 	tie(agent, x, y, t, type) = node->constraints.front();
 
-    cout << "generateChild type: " << type << endl;
+//    cout << "generateChild type: " << type << endl;
 	if (type == constraint_type::LEQLENGTH)
 	{
 		assert(node->constraints.size() <= 2);
@@ -520,10 +520,10 @@ inline void CBS::pushNode(CBSNode* node)
 	num_HL_generated++;
 	node->time_generated = num_HL_generated;
 
-    cout << "pushNode:" << endl;
-    cout << "node->g_val: " << node->g_val << endl;
-    cout << "node->h_val: " << node->h_val << endl;
-    cout << "focal_list_threshold: " << focal_list_threshold << endl;
+//    cout << "pushNode:" << endl;
+//    cout << "node->g_val: " << node->g_val << endl;
+//    cout << "node->h_val: " << node->h_val << endl;
+//    cout << "focal_list_threshold: " << focal_list_threshold << endl;
 
 	if (node->g_val + node->h_val <= focal_list_threshold)
 		node->focal_handle = focal_list.push(node);
@@ -548,10 +548,10 @@ void CBS::printPaths() const
 void CBS::updateFocalList()
 {
 	CBSNode* open_head = open_list.top();
-    cout << "v: " << open_head->g_val + open_head->h_val << ", " << min_f_val << endl;
-    cout << "open_list.size(): " << open_list.size() << endl;
-    cout << "focal_list.size(): " << focal_list.size() << endl;
 
+//    cout << "v: " << open_head->g_val + open_head->h_val << ", " << min_f_val << endl;
+//    cout << "open_list.size(): " << open_list.size() << endl;
+//    cout << "focal_list.size(): " << focal_list.size() << endl;
 
     if (open_head->g_val + open_head->h_val > min_f_val)
 	{
@@ -563,12 +563,12 @@ void CBS::updateFocalList()
 		double new_focal_list_threshold = min_f_val * focal_w;
 		for (CBSNode* n : open_list)
 		{
-            cout << endl;
-            cout << "n->g_val + n->h_val: " << n->g_val + n->h_val << endl;
-            cout << "focal_list_threshold: " << focal_list_threshold << endl;
-            cout << "new_focal_list_threshold: " << new_focal_list_threshold << endl;
-            cout << "min_f_val: " << min_f_val << endl;
-            cout << "focal_w: " << focal_w << endl;
+//            cout << endl;
+//            cout << "n->g_val + n->h_val: " << n->g_val + n->h_val << endl;
+//            cout << "focal_list_threshold: " << focal_list_threshold << endl;
+//            cout << "new_focal_list_threshold: " << new_focal_list_threshold << endl;
+//            cout << "min_f_val: " << min_f_val << endl;
+//            cout << "focal_w: " << focal_w << endl;
 
 			if (n->g_val + n->h_val > focal_list_threshold &&
 				n->g_val + n->h_val <= new_focal_list_threshold)
@@ -1278,8 +1278,8 @@ bool CBS::solve(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v, 
 //        cout << "************printPaths************" << endl;
 //        printPaths();
 
-        cout << "curr->g_val: " << curr->g_val << endl;
-        cout << "curr->h_val: " << curr->h_val << endl;
+//        cout << "curr->g_val: " << curr->g_val << endl;
+//        cout << "curr->h_val: " << curr->h_val << endl;
 
 
         if (screen > 1)
@@ -1288,14 +1288,14 @@ bool CBS::solve(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v, 
 //        bool is_new_obstacle_violate = checkViolateObstacle(instance, *curr, obstacle_add_v);
 
         bool is_new_obstacle_violate = recomputePathCost(instance, curr, obstacle_add_v);
-        cout << "is_new_obstacle_violate: " << is_new_obstacle_violate << endl;
+//        cout << "is_new_obstacle_violate: " << is_new_obstacle_violate << endl;
         /// If is_new_obstacle_violate is true, it means that the added obstacles are valid, but we can't find solution.
         if (is_new_obstacle_violate) {
             open_list.erase(curr->open_handle);
             continue;
         }
 
-        cout << "curr->h_computed: " << curr->h_computed << endl;
+//        cout << "curr->h_computed: " << curr->h_computed << endl;
 
         if (curr->unknownConf.size() + curr->conflicts.size() == 0) //no conflicts
         {// found a solution (and finish the while look)
@@ -1346,7 +1346,6 @@ bool CBS::solve(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v, 
         while (foundBypass)
         {
             foundBypass_count++;
-            std::cout << "foundBypass_count: " << foundBypass_count << std::endl;
 
             if (curr->unknownConf.size() + curr->conflicts.size() == 0) //no conflicts
             {// found a solution (and finish the while look)
@@ -1363,19 +1362,12 @@ bool CBS::solve(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v, 
 
             curr->conflict = chooseConflict(*curr);
 
-//            if (curr->conflict == nullptr) {
-//                findConflicts(*curr);
-//                curr->conflict = chooseConflict(*curr);
-//            }
-//
-//            cout << "stop???" << endl;
-//            cout << curr->conflict << endl;
 
-            child[0]->constraints = curr->conflict->constraint1;
-            child[1]->constraints = curr->conflict->constraint2;
+//            child[0]->constraints = curr->conflict->constraint1;
+//            child[1]->constraints = curr->conflict->constraint2;
 
 
-           /* if (disjoint_splitting && curr->conflict->type == conflict_type::STANDARD)
+            if (disjoint_splitting && curr->conflict->type == conflict_type::STANDARD)
             {
                 int first = (bool) (rand() % 2);
                 if (first) // disjoint splitting on the first agent
@@ -1432,7 +1424,7 @@ bool CBS::solve(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v, 
                     child[i]->constraints.emplace_back(get<0>(constraint), get<1>(constraint), get<2>(constraint), get<3>(constraint),
                                                        constraint_type::POSITIVE_RANGE);
                 }
-            } */
+            }
 
             if (screen > 1)
                 cout << "	Expand " << *curr << endl <<
@@ -1505,7 +1497,7 @@ bool CBS::solve(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v, 
             {
                 for (int i = 0; i < 2; i++)
                 {
-                    cout << "solved[i] " << i << ": " << solved[i] << endl;
+//                    cout << "solved[i] " << i << ": " << solved[i] << endl;
                     if (solved[i])
                     {
                         pushNode(child[i]);
@@ -1524,8 +1516,7 @@ bool CBS::solve(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v, 
             }
         }
 
-        cout << "open_list.size(): " << open_list.size() << endl;
-        cout << "curr->conflict: " << curr->conflict->type << endl;
+//        cout << "curr->conflict: " << curr->conflict->type << endl;
         if (curr->conflict != nullptr)
         {
             switch (curr->conflict->type)
@@ -1551,6 +1542,8 @@ bool CBS::solve(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v, 
         curr->clear();
     }  // end of while loop
 
+//    cout << "open_list.size(): " << open_list.size() << endl;
+//    cout << "solution_found: " << solution_found << endl;
 
     runtime = (double) (clock() - start) / CLOCKS_PER_SEC;
     if (solution_found && !validateSolution())
@@ -1650,7 +1643,7 @@ bool CBS::recomputePathCost(Instance& instance, CBSNode* curr, const vector<Dyna
         if(violated[agent] == true) {
             Path new_path = search_engines[agent]->findPath(*node, initial_constraints[agent], paths, agent, 0);
 
-            cout << "recomputePathCost path_t: " << agent << ": " << new_path << ", " << new_path.empty() << endl;
+//            cout << "recomputePathCost path_t: " << agent << ": " << new_path << ", " << new_path.empty() << endl;
             if (new_path.empty()) {
                 return true;
             }
@@ -1749,22 +1742,25 @@ bool CBS::solveObstacleDeleted(Instance& instance, vector<DynamicObstacle>& obst
 
 bool CBS::recomputePathCost(Instance& instance, const vector<int>& costs_new) {
     cout << "RecomputePathCost" << endl;
-    cout << "open_list.size(): " << open_list.size() << endl;
-    cout << "focal_list.size(): " << focal_list.size() << endl;
+//    cout << "open_list.size(): " << open_list.size() << endl;
+//    cout << "focal_list.size(): " << focal_list.size() << endl;
 
     for(CBSNode* node: open_list) {
         vector<bool> updated(num_of_agents, false);
         CBSNode* curr = node;
 
+        node->makespan = 0;
         while (curr != nullptr) {
             for(auto item_path: curr->paths) {
                 int agent = item_path.first;
                 if (curr == node) {
+                    node->makespan = max(node->makespan, item_path.second.size() - 1);
                     updated[agent] = true;
                 }
 
                 else if(!updated[agent]) {
                     node->paths.emplace_back(agent, item_path.second);
+                    node->makespan = max(node->makespan, item_path.second.size() - 1);
                     updated[agent] = true;
                 }
             }
@@ -1774,20 +1770,26 @@ bool CBS::recomputePathCost(Instance& instance, const vector<int>& costs_new) {
         for(int i = 0; i < num_of_agents; i++) {
             if (!updated[i]) {
                 node->paths.emplace_back(i, paths_found_initially[i]);
+                node->makespan = max(node->makespan, paths_found_initially[i].size() - 1);
             }
         }
+
+        updatePaths(node);
 
         for(auto& item_path: node->paths) {
             int agent = item_path.first;
             int cost_old = (int)item_path.second.size() - 1;
             if (cost_old > costs_new[agent]){
-                Path new_path = search_engines[agent]->findPath(*node, initial_constraints[agent], paths, agent, 0);
+
+                Path new_path = search_engines[agent]->findPath(*node, initial_constraints[agent], paths, agent, (int) paths[agent]->size() - 1);
 
                 item_path.second = new_path;
                 node->g_val = node->g_val - cost_old + ((int)new_path.size() - 1);
             }
         }
+
     }
+
 
     CBSNode* open_head = open_list.top();
     focal_list.clear();
@@ -1796,13 +1798,15 @@ bool CBS::recomputePathCost(Instance& instance, const vector<int>& costs_new) {
     focal_list.push(open_head);
 
     /// print
-    for(CBSNode* node: open_list) {
-        cout << "node->paths.size(): " << node->paths.size() << endl;
-        for(auto path: node->paths) {
-            cout << path.first << ": " << path.second << endl;
-        }
-        cout << "node->g_val: " << ": " << node->g_val << endl;
-    }
+//    for(CBSNode* node: open_list) {
+//        cout << "node->paths.size(): " << node->paths.size() << endl;
+//        for(auto path: node->paths) {
+//            cout << path.first << ": " << path.second << endl;
+//        }
+//        cout << "node->g_val: " << ": " << node->g_val << endl;
+//    }
+
+    cout << "RecomputePathCost end" << endl;
 
     return true;
 }
@@ -1920,13 +1924,7 @@ bool CBS::generateRoot()
 		printPaths();
 	}
 
-//    open_list.
-    cout << "open_list.size(): " << open_list.size() << endl;
 
-    ///test1
-//    for(auto constraint:dummy_start->constraints) {
-//        cout << "dummy_start constraint: " << constraint << endl;
-//    }
 
 //    printTestInfos();
 
@@ -2034,3 +2032,117 @@ void CBS::clear()
 	solution_found = false;
 	solution_cost = -2;
 }
+
+
+vector<int> CBS::getNonRepeatingRandomNumber(int low, int high, int size) {
+
+    vector<int> res{};
+    if (low == 1 && high == 1 && size > 0){
+        res.emplace_back(1);
+        return res;
+    }
+    else if (low == 1 && high == 0) {
+        return res;
+    }
+    else if (size > (high-low + 1)) {
+        for(int i = low;i <= high; ++i)
+        {
+            res.emplace_back(i);
+        }
+        return res;
+    }
+    else {
+        vector<int> number{};
+        for(int i = low;i <= high; ++i)
+        {
+            number.emplace_back(i);
+        }
+        std::random_shuffle(number.begin(),number.end());
+
+        for(int i = 0; i < size; ++i){
+            res.emplace_back(number[i]);
+        }
+        return res;
+    }
+}
+
+
+bool CBS::addRandomObstacles(Instance& instance, vector<DynamicObstacle>& obstacle_add_v, int size) {
+
+//    cout << "paths.size(): " << paths.size() << endl;
+
+    for(auto item: paths) {
+        if(item == nullptr) {
+            return false;
+        }
+    }
+
+    for (int agent = 0; agent < num_of_agents; agent++)
+    {
+//        cout << "paths[agent]->size(): " << paths[agent]->size() << endl;
+        int low = 1;
+        int high = paths[agent]->size() - 2;
+        vector<int> random_index = getNonRepeatingRandomNumber(low, high, size);
+        for(auto index: random_index) {
+            PathEntry t = paths[agent]->at(index);
+            int x = instance.getColCoordinate(t.location);
+            int y = instance.getRowCoordinate(t.location);
+            obstacle_add_v.emplace_back(x, y);
+        }
+    }
+
+    /// change map
+    for(auto item_obstacle: obstacle_add_v){
+        int obstacle_pos = instance.getCols() * item_obstacle.y + item_obstacle.x;
+        instance.changeMap(obstacle_pos, true);
+    }
+    return true;
+}
+
+
+bool CBS::deleteRandomObstacles(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v, int size) {
+
+    obstacle_delete_v.clear();
+
+    vector<int> obstacle_locations{};
+    for(int loc = 0; loc < instance.map_size; ++loc){
+        if(instance.isObstacle(loc)) {
+            obstacle_locations.emplace_back(loc);
+        }
+    }
+    std::random_shuffle(obstacle_locations.begin(),obstacle_locations.end());
+
+    int random_delete_size = obstacle_locations.size() < size ? obstacle_locations.size() : size;
+    for(int i = 0; i < random_delete_size; ++i) {
+        int item_location = obstacle_locations[i];
+        int x = instance.getColCoordinate(item_location);
+        int y = instance.getRowCoordinate(item_location);
+        obstacle_delete_v.emplace_back(x, y);
+    }
+
+    /// change map
+    for(auto item_obstacle: obstacle_delete_v) {
+        int obstacle_pos = instance.getCols() * item_obstacle.y + item_obstacle.x;
+        instance.changeMap(obstacle_pos, false);
+    }
+
+    return true;
+}
+
+bool CBS::changeRandomObstacles(Instance& instance, vector<DynamicObstacle>& obstacle_add_v, vector<DynamicObstacle>& obstacle_delete_v) {
+
+
+    for(int i = 0; i < 10; ++i) {
+        if((rand() % 2) == 1) {
+            addRandomObstacles(instance, obstacle_add_v, 2);
+        }
+        else if((rand() % 2) == 0) {
+            deleteRandomObstacles(instance, obstacle_delete_v, 10);
+        }
+    }
+
+    return false;
+}
+
+
+

@@ -102,6 +102,13 @@ public:
 
     int get_open_list_size() { return open_list.size(); }
 
+    ///for automation testing
+    vector<int> getNonRepeatingRandomNumber(int low, int high, int size);
+    bool addRandomObstacles(Instance& instance, vector<DynamicObstacle>& obstacle_add_v, int size = 2);
+    bool deleteRandomObstacles(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v, int size = 10);
+    bool changeRandomObstacles(Instance& instance, vector<DynamicObstacle>& obstacle_add_v, vector<DynamicObstacle>& obstacle_delete_v);
+
+
 private:
 	bool target_reasoning; // using target reasoning
 	bool disjoint_splitting; // disjoint splitting
