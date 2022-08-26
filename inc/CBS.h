@@ -5,6 +5,10 @@
 #include "CorridorReasoning.h"
 #include "MutexReasoning.h"
 
+#include "json.hpp"
+
+using json = nlohmann::json;
+
 class CBS
 {
 public:
@@ -108,6 +112,14 @@ public:
     bool deleteRandomObstacles(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v, int size = 10);
     bool changeRandomObstacles(Instance& instance, vector<DynamicObstacle>& obstacle_add_v, vector<DynamicObstacle>& obstacle_delete_v);
 
+    void initModifyscenInfos(Instance& instance);
+    void updateModifyscenInfos(int step, bool is_add_obstacles, vector<DynamicObstacle>& obstacle_v);
+    void clearModifyscenInfos();
+    void saveModifyscen(const string &fileName);
+
+private:
+
+    json modify_scen_infos;
 
 private:
 	bool target_reasoning; // using target reasoning

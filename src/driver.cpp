@@ -152,10 +152,11 @@ int main(int argc, char** argv)
 	cbs.setSavingStats(vm["stats"].as<bool>());
 	cbs.setNodeLimit(vm["nodeLimit"].as<int>());
 
-
+    instance.printAgentInfos();
 	//////////////////////////////////////////////////////////////////////
 	/// run
     //////////////////////////////////////////////////////////////////////
+    cbs.initModifyscenInfos(instance);
 	double runtime = 0;
 	int min_f_val = 0;
     const int CHANGE_TIMES = 10;
@@ -166,6 +167,7 @@ int main(int argc, char** argv)
     int current_step = 0;
     while (current_step < CHANGE_TIMES) {
         if(current_step == 0) {
+            cbs.updateModifyscenInfos(current_step, false, obstacle_add_v);
             cbs.dijkstra();
             cbs.clear();
             cbs.initSolveParams(vm["cutoffTime"].as<double>(), min_f_val);
@@ -182,10 +184,12 @@ int main(int argc, char** argv)
             if((current_step % 2) == 1) {
                 cout << "addRandomObstacles" << endl;
                 cbs.addRandomObstacles(instance, obstacle_add_v, 2);
+                cbs.updateModifyscenInfos(current_step, true, obstacle_add_v);
             }
             else if((current_step % 2) == 0) {
                 cout << "deleteRandomObstacles" << endl;
                 cbs.deleteRandomObstacles(instance, obstacle_delete_v, 10);
+                cbs.updateModifyscenInfos(current_step, false, obstacle_delete_v);
             }
             cbs.dijkstra();
             if(cbs.get_open_list_size() == 0) {
@@ -217,6 +221,8 @@ int main(int argc, char** argv)
 
     }
 
+    cbs.saveModifyscen("modifyscen.json");
+    cbs.clearModifyscenInfos();
 //    instance.printMap();
 
 

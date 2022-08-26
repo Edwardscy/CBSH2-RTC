@@ -36,6 +36,7 @@ public:
 	inline int getColCoordinate(int id) const { return id % this->num_of_cols; }
 	inline pair<int, int> getCoordinate(int id) const { return make_pair(id / this->num_of_cols, id % this->num_of_cols); }
 	inline int getCols() const { return num_of_cols; }
+    inline int getRows() const { return num_of_rows; }
 
 	inline int getManhattanDistance(int loc1, int loc2) const
 	{
@@ -124,6 +125,13 @@ public:
             }
         }
         return false;
+    }
+
+    void printAgentInfos() {
+        cout << "agent infos" << endl;
+        for(int i = 0; i < num_of_agents; ++i) {
+            cout << start_locations[i] << ", " << goal_locations[i] << endl;
+        }
     }
 
 private:
