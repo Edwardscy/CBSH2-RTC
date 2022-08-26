@@ -1588,6 +1588,7 @@ bool CBS::recomputePathCost(Instance& instance, CBSNode* curr, const vector<Dyna
 
     bool need_update_path = false;
     vector<bool> violated(num_of_agents, false);
+//    updatePaths(curr);
     for (int agent = 0; agent < num_of_agents; agent++)
     {
         for(auto item: obstacle_add_v){
@@ -1607,7 +1608,7 @@ bool CBS::recomputePathCost(Instance& instance, CBSNode* curr, const vector<Dyna
         }
     }
 
-    cout << "need_update_path: " << need_update_path << endl;
+//    cout << "need_update_path: " << need_update_path << endl;
 
     if(!need_update_path) {
         return false;
@@ -1615,28 +1616,28 @@ bool CBS::recomputePathCost(Instance& instance, CBSNode* curr, const vector<Dyna
 
     vector<bool> updated(num_of_agents, false);
     CBSNode* node = curr;
-    node->makespan = 0;
-    while (curr != nullptr) {
-        for(auto item_path: curr->paths) {
+    curr->makespan = 0;
+    while (node != nullptr) {
+        for(auto item_path: node->paths) {
             int agent = item_path.first;
             if (node == curr) {
-                node->makespan = max(node->makespan, item_path.second.size() - 1);
+                curr->makespan = max(curr->makespan, item_path.second.size() - 1);
                 updated[agent] = true;
             }
 
             else if(!updated[agent]) {
-                node->paths.emplace_back(agent, item_path.second);
-                node->makespan = max(node->makespan, item_path.second.size() - 1);
+                curr->paths.emplace_back(agent, item_path.second);
+                curr->makespan = max(curr->makespan, item_path.second.size() - 1);
                 updated[agent] = true;
             }
         }
-        curr = curr->parent;
+        node = node->parent;
     }
 
     for(int i = 0; i < num_of_agents; i++) {
         if (!updated[i]) {
-            node->paths.emplace_back(i, paths_found_initially[i]);
-            node->makespan = max(node->makespan, paths_found_initially[i].size() - 1);
+            curr->paths.emplace_back(i, paths_found_initially[i]);
+            curr->makespan = max(curr->makespan, paths_found_initially[i].size() - 1);
         }
     }
 
@@ -1646,10 +1647,10 @@ bool CBS::recomputePathCost(Instance& instance, CBSNode* curr, const vector<Dyna
 //        updatePaths(curr);
 //    }
 
-    for(auto& item_path: node->paths) {
+    for(auto& item_path: curr->paths) {
         int agent = item_path.first;
         if(violated[agent] == true) {
-            Path new_path = search_engines[agent]->findPath(*node, initial_constraints[agent], paths, agent, 0); // (int) paths[agent]->size() - 1
+            Path new_path = search_engines[agent]->findPath(*curr, initial_constraints[agent], paths, agent, (int) paths[agent]->size() - 1); // (int) paths[agent]->size() - 1
 
 //            cout << "recomputePathCost path_t: " << agent << ": " << new_path << ", " << new_path.empty() << endl;
             if (new_path.empty()) {
@@ -1657,13 +1658,15 @@ bool CBS::recomputePathCost(Instance& instance, CBSNode* curr, const vector<Dyna
             }
             int cost_old = (int)item_path.second.size() - 1;
             item_path.second = new_path;
-            node->g_val = node->g_val - cost_old + ((int)new_path.size() - 1);
+            curr->g_val = curr->g_val - cost_old + ((int)new_path.size() - 1);
+            paths[agent] = &item_path.second;
+            curr->makespan = max(curr->makespan, new_path.size() - 1);
         }
     }
 
-    findConflicts(*node);
-    cout << "node->conflicts.size(): " << node->conflicts.size() << endl;
-    cout << "node->unknownConf.size(): " << node->unknownConf.size() << endl;
+    findConflicts(*curr);
+//    cout << "curr->conflicts.size(): " << curr->conflicts.size() << endl;
+//    cout << "curr->unknownConf.size(): " << curr->unknownConf.size() << endl;
 
 
     return false;
