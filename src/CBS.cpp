@@ -2167,8 +2167,8 @@ bool CBS::changeRandomObstacles(Instance& instance, vector<DynamicObstacle>& obs
 
 void CBS::initModifyscenInfos(Instance& instance) {
 
-    modify_scen_infos["map_size"]["row"] = instance.getRows();
-    modify_scen_infos["map_size"]["col"] = instance.getCols();
+//    modify_scen_infos["map_size"]["row"] = instance.getRows();
+//    modify_scen_infos["map_size"]["col"] = instance.getCols();
 }
 
 void CBS::updateModifyscenInfos(int step, bool is_add_obstacles, vector<DynamicObstacle>& obstacle_v) {
@@ -2201,5 +2201,19 @@ void CBS::saveModifyscen(const string &fileName)  {
 
     output.close();
 
+}
+
+json CBS::parseModifyscen(const string &fileName) {
+    std::ifstream f(fileName);
+    json j = json::parse(f);
+
+    f.close();
+    return j;
+
+}
+
+bool CBS::isFileExists(const string& name) {
+    std::ifstream f(name.c_str());
+    return f.good();
 }
 

@@ -116,6 +116,8 @@ public:
     void updateModifyscenInfos(int step, bool is_add_obstacles, vector<DynamicObstacle>& obstacle_v);
     void clearModifyscenInfos();
     void saveModifyscen(const string &fileName);
+    json parseModifyscen(const string &fileName);
+    bool isFileExists(const string &fileName);
 
 private:
 
