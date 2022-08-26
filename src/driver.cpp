@@ -248,6 +248,7 @@ int main(int argc, char** argv)
                 cout << "@@@@@@@@@@@@@@@@@@@@@@@" << endl;
                 cout << "cbs.get_open_list_size(): " << cbs.get_open_list_size() << endl;
                 if(value["is_add_obstacles"]) {
+                    cout << "addRandomObstacles" << endl;
                     if(value.contains("pos")) {
                         for(auto& [k, v]: value["pos"].items()) {
                             int x = v["x"];
@@ -258,6 +259,7 @@ int main(int argc, char** argv)
                     }
                 }
                 else if(!value["is_add_obstacles"]) {
+                    cout << "deleteRandomObstacles" << endl;
                     if(value.contains("pos")) {
                         for(auto& [k, v]: value["pos"].items()) {
                             int x = v["x"];
