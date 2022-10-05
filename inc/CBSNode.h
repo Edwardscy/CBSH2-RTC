@@ -67,6 +67,9 @@ public:
 	uint64_t time_expanded;
 	uint64_t time_generated;
 
+    bool need_update{false};
+
+    int label = 0;
 
 	void clear();
 	void printConflictGraph(int num_of_agents) const;

@@ -6,6 +6,7 @@
 #include "MutexReasoning.h"
 
 #include "json.hpp"
+#include <boost/program_options.hpp>
 
 using json = nlohmann::json;
 
@@ -95,12 +96,19 @@ public:
 
     bool checkViolateObstacle(Instance& instance, CBSNode& curr, vector<DynamicObstacle>& obstacle_add_v);
 
-    bool recomputePathCost(Instance& instance, CBSNode* curr, const vector<DynamicObstacle>& obstacle_add_v);
+    void markNodeForAddObstacles(const vector<DynamicObstacle>& obstacle_add_v);
+
+    void update_heuristic_values(Instance& instance);
+
+    void update_add_obstacles_set(Instance& instance, vector<DynamicObstacle>& obstacle_add_v);
+
+    ObstacleAddEnum recomputePathCost(Instance& instance, CBSNode* curr, const vector<DynamicObstacle>& obstacle_add_v);
 
     bool solveObstacleDeleted(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v);
 
-
     bool recomputePathCost(Instance& instance, const vector<int>& costs_new);
+
+    bool checkValidateSolution(Instance& instance);
 
     void printTestInfos();
 
@@ -119,9 +127,36 @@ public:
     json parseModifyscen(const string &fileName);
     bool isFileExists(const string &fileName);
 
+    void printResults(int step);
+
+    void setLabel(int value) { label = value; }
+
+    void update_min_f_val();
+
+    void printNodeLabelInfos();
+
+    void initStateParams();
+
+    void initResultInfos(const boost::program_options::variables_map& vm, const bool& is_modifyscen_exist);
+    void updateResultInfos(int step);
+    void saveResultInfos(const string &fileName);
+
 private:
 
     json modify_scen_infos;
+    int label = 0;
+
+    vector<int> heuristic_values{};
+
+    boost::unordered_set<int> add_obstacles_set;
+
+    json result_infos_json;
+
+    int num_of_high_level_nodes_expansion{0};
+    int num_of_high_level_nodes_expansion_generated{0};
+    int num_of_high_level_nodes_in_open_on_start{0};
+    int num_of_high_level_nodes_in_open_on_finish{0};
+
 
 private:
 	bool target_reasoning; // using target reasoning

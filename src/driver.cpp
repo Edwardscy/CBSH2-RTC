@@ -51,6 +51,11 @@ int main(int argc, char** argv)
 		("targetReasoning", po::value<bool>()->default_value(false), "Using target reasoning")
 		("restart", po::value<int>()->default_value(1), "number of restart times (at least 1)")
 		("sipp", po::value<bool>()->default_value(false), "using sipp as the single agent solver")
+
+        // save result path
+        ("result_path", po::value<string>(), "save result file for paths")
+        ("change_map_counts", po::value<int>(), "counts that map changes")
+
 		;
 
 	po::variables_map vm;
@@ -159,17 +164,39 @@ int main(int argc, char** argv)
 
 	double runtime = 0;
 	int min_f_val = 0;
-    const int CHANGE_TIMES = 10;
+    const int CHANGE_TIMES = vm["change_map_counts"].as<int>(); //10;
 
     vector<DynamicObstacle> obstacle_add_v;
     vector<DynamicObstacle> obstacle_delete_v;
 
-    bool is_modifyscen_exist = cbs.isFileExists("modifyscen.json");
+
+//    string result_save_directory = vm["result_path"].as<string>() + "/" +
+//                                   std::to_string(vm["agentNum"].as<int>())  + "/";
+
+    string result_save_directory = vm["result_path"].as<string>();
+
+    bool is_modifyscen_exist = cbs.isFileExists(result_save_directory + "modifyscen.json");
     cout << "is_modifyscen_exist: " << is_modifyscen_exist << endl;
+
+
+    double total_time_cost = 0;
+
+    cbs.initResultInfos(vm, is_modifyscen_exist);
+
+//    is_modifyscen_exist = false;
     if(!is_modifyscen_exist) {
+//        clock_t start = clock();
+
         cbs.initModifyscenInfos(instance);
         int current_step = 0;
         while (current_step < CHANGE_TIMES) {
+
+            cout << "current_step: " << current_step << endl;
+
+            cbs.printNodeLabelInfos();
+            cbs.setLabel(current_step);
+
+
             if(current_step == 0) {
                 cbs.updateModifyscenInfos(current_step, false, obstacle_add_v);
                 cbs.dijkstra();
@@ -177,34 +204,51 @@ int main(int argc, char** argv)
                 cbs.initSolveParams(vm["cutoffTime"].as<double>(), min_f_val);
                 bool is_generate_success = cbs.generateRoot();
                 cout << "is_generate_success: " << is_generate_success << endl;
+
             }
 
             else {
                 cout << "@@@@@@@@@@@@@@@@@@@@@@@" << endl;
                 cout << "cbs.get_open_list_size(): " << cbs.get_open_list_size() << endl;
-//            cbs.deleteRandomObstacles(instance, obstacle_delete_v, 10);
+
+                cbs.addRandomObstacles(instance, obstacle_add_v, 5);
+                cbs.updateModifyscenInfos(current_step, true, obstacle_add_v);
+
+//                cbs.deleteRandomObstacles(instance, obstacle_delete_v, 5);
+//                cbs.updateModifyscenInfos(current_step, false, obstacle_delete_v);
+
+//                cbs.dijkstra();
+
                 // (rand() % 2)
 
-                if((current_step % 2) == 1) {
-                    cout << "addRandomObstacles" << endl;
-                    cbs.addRandomObstacles(instance, obstacle_add_v, 2);
-                    cbs.updateModifyscenInfos(current_step, true, obstacle_add_v);
-                }
-                else if((current_step % 2) == 0) {
-                    cout << "deleteRandomObstacles" << endl;
-                    cbs.deleteRandomObstacles(instance, obstacle_delete_v, 10);
-                    cbs.updateModifyscenInfos(current_step, false, obstacle_delete_v);
-                }
-                cbs.dijkstra();
-                if(cbs.get_open_list_size() == 0) {
+//                if((current_step % 2) == 1) {
+//                    cout << "addRandomObstacles" << endl;
+//                    cbs.addRandomObstacles(instance, obstacle_add_v, 5);
+//                    cbs.updateModifyscenInfos(current_step, true, obstacle_add_v);
+////                    cbs.dijkstra();
+//                }
+//                else if((current_step % 2) == 0) {
+//                    cout << "deleteRandomObstacles" << endl;
+//                    cbs.deleteRandomObstacles(instance, obstacle_delete_v, 5);
+//                    cbs.updateModifyscenInfos(current_step, false, obstacle_delete_v);
+////                    cbs.dijkstra();
+//                }
+
+
+//                cbs.dijkstra();
+
+                if(cbs.get_open_list_size() == 0) { // || cbs.get_open_list_size() >= 500
                     cbs.clear();
                     cbs.initSolveParams(vm["cutoffTime"].as<double>(), min_f_val);
                     bool is_generate_success = cbs.generateRoot();
                     if (!is_generate_success) {
-                        current_step++;
+
                         obstacle_delete_v.clear();
                         obstacle_add_v.clear();
                         cout << "cbs.generateRoot() failed" << endl;
+                        cbs.runtime = 0;
+                        cbs.updateResultInfos(current_step);
+                        current_step++;
                         continue;
                     }
                 }
@@ -213,30 +257,58 @@ int main(int argc, char** argv)
 
             cbs.solve(instance, obstacle_delete_v, obstacle_add_v);
 
+
+
+//            cbs.printResults(current_step);
+            cbs.updateResultInfos(current_step);
+
             current_step++;
             runtime += cbs.runtime;
-            min_f_val = 0;
-            cbs.set_min_f_val(min_f_val);
+//            min_f_val = cbs.solution_cost;
+//            cbs.set_min_f_val(min_f_val);
+
+            cbs.update_min_f_val();
 
 
             obstacle_delete_v.clear();
             obstacle_add_v.clear();
 
+            cbs.checkValidateSolution(instance);
+
+            total_time_cost += cbs.runtime;
 
         }
 
-        cbs.saveModifyscen("modifyscen.json");
+//        double total_time_cost = (double) (clock() - start) / CLOCKS_PER_SEC;
+        cout << "total_time_cost: " << total_time_cost << endl;
+
+        cbs.saveModifyscen(result_save_directory + "modifyscen.json");
         cbs.clearModifyscenInfos();
+
+        cbs.saveResultInfos(result_save_directory + "new_cbs_result.json");
 //    instance.printMap();
     }
 
 
+//    is_modifyscen_exist = false;
 
     if(is_modifyscen_exist) {
-        json modifyscen_infos = cbs.parseModifyscen("modifyscen.json");
+        cout << "use modifyscen.json to compute old cbs" << endl;
+//        clock_t start = clock();
+
+        string modifyscen_infos_file_name = result_save_directory + "modifyscen.json";
+        json modifyscen_infos = cbs.parseModifyscen(modifyscen_infos_file_name);
         obstacle_delete_v.clear();
         obstacle_add_v.clear();
-        for (auto& [key, value] : modifyscen_infos.items()) {
+        int current_step = 0;
+        for(int i = 0; i < CHANGE_TIMES; ++i) {
+
+            string key = std::to_string(i);
+            json value = modifyscen_infos[key];
+
+            cout << "current_step: " << current_step << endl;
+            current_step++;
+
             if(key == "0") {
                 cbs.dijkstra();
                 cbs.clear();
@@ -245,8 +317,13 @@ int main(int argc, char** argv)
                 cout << "is_generate_success: " << is_generate_success << endl;
             }
             else {
+
                 cout << "@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+                cout << "key: " << key << endl;
                 cout << "cbs.get_open_list_size(): " << cbs.get_open_list_size() << endl;
+
+                cbs.clear();
+
                 if(value["is_add_obstacles"]) {
                     cout << "addRandomObstacles" << endl;
                     if(value.contains("pos")) {
@@ -255,6 +332,7 @@ int main(int argc, char** argv)
                             int y = v["y"];
                             int obstacle_pos = instance.getCols() * y + x;
                             instance.changeMap(obstacle_pos, true);
+                            cout << "add obstacle_pos: " << obstacle_pos << endl;
                         }
                     }
                 }
@@ -271,13 +349,26 @@ int main(int argc, char** argv)
                 }
 
                 cbs.dijkstra();
-                cbs.clear();
                 cbs.initSolveParams(vm["cutoffTime"].as<double>(), min_f_val);
                 bool is_generate_success = cbs.generateRoot();
                 cout << "is_generate_success: " << is_generate_success << endl;
+                if (!is_generate_success) {
+                    obstacle_delete_v.clear();
+                    obstacle_add_v.clear();
+                    cbs.runtime = 0;
+                    min_f_val = 0;
+                    cbs.set_min_f_val(min_f_val);
+                    cout << "cbs.generateRoot() failed" << endl;
+                    cbs.updateResultInfos(i);
+                    continue;
+                }
+
             }
 
-            cbs.solve(instance, obstacle_delete_v, obstacle_add_v);
+//            cbs.solve(instance, obstacle_delete_v, obstacle_add_v);
+            cbs.solve(vm["cutoffTime"].as<double>(), min_f_val);
+
+            cbs.updateResultInfos(i);
 
             runtime += cbs.runtime;
             min_f_val = 0;
@@ -286,9 +377,18 @@ int main(int argc, char** argv)
             obstacle_delete_v.clear();
             obstacle_add_v.clear();
 
-        }
-    }
+            cbs.checkValidateSolution(instance);
 
+            total_time_cost += cbs.runtime;
+
+        }
+
+
+//        double total_time_cost = (double) (clock() - start) / CLOCKS_PER_SEC;
+        cout << "total_time_cost: " << total_time_cost << endl;
+
+        cbs.saveResultInfos(result_save_directory + "old_cbs_result.json");
+    }
 
 
 	cbs.runtime = runtime;
@@ -309,3 +409,5 @@ int main(int argc, char** argv)
 	return 0;
 
 }
+
+
