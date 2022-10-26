@@ -107,7 +107,7 @@ void CBS::findConflicts(CBSNode& curr, int a1, int a2)
 					conflict->vertexConflict(a1_, a2_, loc1, timestep);
 				assert(!conflict->constraint1.empty());
 				assert(!conflict->constraint2.empty());
-				curr.unknownConf.push_front(conflict); // It's at least a semi conflict			
+				curr.unknownConf.push_front(conflict); // It's at least a semi conflict
 			}
 		}
 	}
@@ -549,9 +549,13 @@ void CBS::updateFocalList()
 {
 	CBSNode* open_head = open_list.top();
 
-//    cout << "v: " << open_head->g_val + open_head->h_val << ", " << min_f_val << endl;
-//    cout << "open_list.size(): " << open_list.size() << endl;
-//    cout << "focal_list.size(): " << focal_list.size() << endl;
+//    if (open_head->g_val + open_head->h_val > min_f_val) {
+//
+//
+//        cout << "v: " << open_head->g_val + open_head->h_val << ", " << min_f_val << endl;
+//        cout << "open_list.size(): " << open_list.size() << endl;
+//        cout << "focal_list.size(): " << focal_list.size() << endl;
+//    }
 
     if (open_head->g_val + open_head->h_val > min_f_val)
 	{
@@ -583,6 +587,13 @@ void CBS::updateFocalList()
 			cout << focal_list.size() << endl;
 		}
 	}
+
+
+//    if(focal_list.size() == 0) {
+//        cout << "v: " << open_head->g_val + open_head->h_val << ", " << min_f_val << endl;
+//        cout << "open_list.size(): " << open_list.size() << endl;
+//        cout << "focal_list.size(): " << focal_list.size() << endl;
+//    }
 
     if(focal_list.size() == 0) {
         focal_list.push(open_head);
@@ -706,8 +717,8 @@ void CBS::saveCT(const string &fileName) const // write the CT to a file
 	output << "center = true;" << endl;
 	for (auto node : allNodes_table)
 	{
-		output << node->time_generated << " [label=\"#" << node->time_generated 
-					<< "\ng+h="<< node->g_val << "+" << node->h_val 
+		output << node->time_generated << " [label=\"#" << node->time_generated
+					<< "\ng+h="<< node->g_val << "+" << node->h_val
 					<< "\nd=" << node->tie_breaking << "\"]" << endl;
 		if (node == dummy_start)
 			continue;
@@ -1265,11 +1276,10 @@ bool CBS::solve(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v, 
     solveObstacleDeleted(instance, obstacle_delete_v);
 
     /// obstacle added case
-    markNodeForAddObstacles(obstacle_add_v);
-
 //    update_heuristic_values(instance);
-
     update_add_obstacles_set(instance, obstacle_add_v);
+
+    markNodeForAddObstacles(obstacle_add_v);
 
     //////////////////////////////////////////////////////////
     std::cout << "open_list.size(): " << open_list.size() << " " << !open_list.empty() << std::endl;
@@ -1315,6 +1325,16 @@ bool CBS::solve(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v, 
 
         ObstacleAddEnum obstacle_add_update_sol = recomputePathCost(instance, curr, obstacle_add_v);
         if (obstacle_add_update_sol == ObstacleAddEnum::CONINTUE) {
+//            cout << "curr->constraints.size(): " << curr->constraints.size() << endl;
+//            if (curr->unknownConf.size() + curr->conflicts.size() == 0) //no conflicts
+//            {// found a solution (and finish the while look)
+//                cout << "curr->g_val: " << curr->g_val  << endl;
+//                cout << "curr->h_computed: " << curr->h_computed  << endl;
+//                solution_found = true;
+//                solution_cost = curr->g_val;
+//                goal_node = curr;
+//                break;
+//            }
             continue;
         }
         else if (obstacle_add_update_sol == ObstacleAddEnum::ERASE_NODE) {
@@ -1586,6 +1606,12 @@ bool CBS::solve(Instance& instance, vector<DynamicObstacle>& obstacle_delete_v, 
     num_of_high_level_nodes_in_open_on_finish = open_list.size();
 
 
+//    for(int i = 0; i<12;++i){
+//        goal_node->printConstraints(i);
+//        cout << endl;
+//    }
+
+
     if (solution_found && !validateSolution())
     {
         cout << "Solution invalid!!!" << endl;
@@ -1628,6 +1654,11 @@ void CBS::markNodeForAddObstacles(const vector<DynamicObstacle>& obstacle_add_v)
     }
 
     focal_list.clear();
+
+//    open_list.clear();
+//    CBSNode *n = goal_node;
+//    n->open_handle = open_list.push(n);
+
 
 }
 
@@ -1725,7 +1756,7 @@ ObstacleAddEnum CBS::recomputePathCost(Instance& instance, CBSNode* curr, const 
         if(violated[agent] == true) {
 //            clock_t t = clock();
 
-            min_f_val = 0;
+//            min_f_val = 0;
             Path new_path = search_engines[agent]->findPath(*curr, initial_constraints[agent], paths,
                                                             agent, (int) paths[agent]->size() - 1); // (int) paths[agent]->size() - 1
 
@@ -1751,7 +1782,6 @@ ObstacleAddEnum CBS::recomputePathCost(Instance& instance, CBSNode* curr, const 
     }
 
     findConflicts(*curr);
-
     curr->label = label;
 
     open_list.erase(curr->open_handle);
@@ -2028,7 +2058,7 @@ bool CBS::generateRoot()
 		}
 	}
 
-	// generate dummy start and update data structures		
+	// generate dummy start and update data structures
 	dummy_start->h_val = 0;
 	dummy_start->depth = 0;
 	dummy_start->open_handle = open_list.push(dummy_start);
@@ -2126,7 +2156,7 @@ bool CBS::validateSolution() const
 					if (loc1 == loc2)
 					{
 						cout << "Agents " << a1 << " and " << a2 << " collides at " << loc1 << " at timestep " << timestep << endl;
-						return false; // It's at least a semi conflict			
+						return false; // It's at least a semi conflict
 					}
 				}
 			}

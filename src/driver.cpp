@@ -170,10 +170,10 @@ int main(int argc, char** argv)
     vector<DynamicObstacle> obstacle_delete_v;
 
 
-//    string result_save_directory = vm["result_path"].as<string>() + "/" +
-//                                   std::to_string(vm["agentNum"].as<int>())  + "/";
+    string result_save_directory = vm["result_path"].as<string>() + "/" +
+                                   std::to_string(vm["agentNum"].as<int>())  + "/";
 
-    string result_save_directory = vm["result_path"].as<string>();
+//    string result_save_directory = vm["result_path"].as<string>();
 
     bool is_modifyscen_exist = cbs.isFileExists(result_save_directory + "modifyscen.json");
     cout << "is_modifyscen_exist: " << is_modifyscen_exist << endl;
@@ -235,9 +235,9 @@ int main(int argc, char** argv)
 //                }
 
 
-//                cbs.dijkstra();
+                cbs.dijkstra();
 
-                if(cbs.get_open_list_size() == 0) { // || cbs.get_open_list_size() >= 500
+                if(cbs.get_open_list_size() == 0 || cbs.solution_cost < 0) { // || cbs.get_open_list_size() >= 500
                     cbs.clear();
                     cbs.initSolveParams(vm["cutoffTime"].as<double>(), min_f_val);
                     bool is_generate_success = cbs.generateRoot();
